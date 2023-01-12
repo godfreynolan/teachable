@@ -219,3 +219,644 @@ Please **replace everything** in the `settings.gradle` with
 rootProject.name = "Camera-App"
 include ':app'
 ```
+
+### Building the Layouts of Activity
+### 1. Creating the MApplication Class
+In the project file navigator, go to app -> java -> com -> riis -> fpv, and right-click on the fpv directory. Select New -> Kotlin Class to create a new kotlin class and name it as MApplication.kt.
+
+Then, open the MApplication.kt file and replace the content with the following:
+```kotlin
+package com.riis.cameraapp
+
+import android.app.Application
+import android.content.Context
+import com.secneo.sdk.Helper
+
+class MApplication: Application() {
+
+    override fun attachBaseContext(base: Context?) {
+        super.attachBaseContext(base)
+        Helper.install(this)
+    }
+}
+```
+Here we override the attachBaseContext() method to invoke the install() method of Helper class to load the SDK classes before using any SDK functionality. Failing to do so will result in unexpected crashes.
+
+### 2. Implementing the MainActivity Class
+The MainActivity.kt file is created by Android Studio by default. Let's replace its code with the following:
+```kotlin
+package com.riis.cameraapp
+
+import android.graphics.SurfaceTexture
+import android.os.Bundle
+import android.view.TextureView
+import android.view.View
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import dji.common.product.Model
+import dji.sdk.base.BaseProduct
+import dji.sdk.camera.Camera
+import dji.sdk.camera.VideoFeeder
+import dji.sdk.codec.DJICodecManager
+import dji.sdk.products.Aircraft
+import dji.sdk.products.HandHeld
+import dji.sdk.sdkmanager.DJISDKManager
+
+/*
+This activity provides an interface to access a connected DJI Product's camera and use
+it to take photos and record videos
+*/
+class MainActivity : AppCompatActivity(), TextureView.SurfaceTextureListener, View.OnClickListener {
+    //listener that is used to receive video data coming from the connected DJI product
+    private var receivedVideoDataListener: VideoFeeder.VideoDataListener? = null
+    private var codecManager: DJICodecManager? = null //handles the encoding and decoding of video data
+
+    //Creating the Activity
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        setContentView(R.layout.activity_main) //inflating the activity_main.xml layout as the activity's view
+
+        /*
+        The receivedVideoDataListener receives the raw video data and the size of the data from the DJI product.
+        It then sends this data to the codec manager for decoding.
+        */
+        receivedVideoDataListener = VideoFeeder.VideoDataListener { videoBuffer, size ->
+            codecManager?.sendDataToDecoder(videoBuffer, size)
+        }
+    }
+
+    //Function that initializes the display for the videoSurface TextureView
+    private fun initPreviewer() {
+
+        //gets an instance of the connected DJI product (null if nonexistent)
+        val product: BaseProduct = getProductInstance() ?: return
+
+        //if DJI product is disconnected, alert the user
+        if (!product.isConnected) {
+            showToast(getString(R.string.disconnected))
+        } else {
+            /*
+            if the DJI product is connected and the aircraft model is not unknown, add the
+            receivedVideoDataListener to the primary video feed.
+            */
+            if (product.model != Model.UNKNOWN_AIRCRAFT) {
+                receivedVideoDataListener?.let {
+                    VideoFeeder.getInstance().primaryVideoFeed.addVideoDataListener(
+                        it
+                    )
+                }
+            }
+        }
+    }
+
+    //Function that displays toast messages to the user
+    private fun showToast(msg: String?) {
+        runOnUiThread { Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show() }
+    }
+
+    //When the MainActivity is created or resumed, initialize the video feed display
+    override fun onResume() {
+        super.onResume()
+        initPreviewer()
+    }
+
+    //When a TextureView's SurfaceTexture is ready for use, use it to initialize the codecManager
+    override fun onSurfaceTextureAvailable(surface: SurfaceTexture, width: Int, height: Int) {
+        if (codecManager == null) {
+            codecManager = DJICodecManager(this, surface, width, height)
+        }
+    }
+
+    //when a SurfaceTexture's size changes...
+    override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture, width: Int, height: Int) {}
+
+    //when a SurfaceTexture is about to be destroyed, un-initialize the codedManager
+    override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
+        codecManager?.cleanSurface()
+        codecManager = null
+        return false
+    }
+
+    //When a SurfaceTexture is updated...
+    override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {}
+
+    //Handling what happens when certain layout views are clicked
+    override fun onClick(v: View?) {}
+
+    /*
+    Note:
+    Depending on the DJI product, the mobile device is either connected directly to the drone,
+    or it is connected to a remote controller (RC) which is then used to control the drone.
+    */
+
+    //Function used to get the DJI product that is directly connected to the mobile device
+    private fun getProductInstance(): BaseProduct? {
+        return DJISDKManager.getInstance().product
+    }
+
+    /*
+    Function used to get an instance of the camera in use from the DJI product
+    */
+    private fun getCameraInstance(): Camera? {
+        if (getProductInstance() == null) return null
+
+        return when {
+            getProductInstance() is Aircraft -> {
+                (getProductInstance() as Aircraft).camera
+            }
+            getProductInstance() is HandHeld -> {
+                (getProductInstance() as HandHeld).camera
+            }
+            else -> null
+        }
+    }
+}
+```
+### 3. Implementing the MainActivity Layout
+Open the activity_main.xml layout file and replace the code with the following:
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+xmlns:tools="http://schemas.android.com/tools"
+xmlns:custom="http://schemas.android.com/apk/res-auto"
+android:layout_width="match_parent"
+android:layout_height="match_parent"
+android:orientation="vertical"
+tools:context=".MainActivity">
+
+<!-- Widget to see first person view (FPV) -->
+ <dji.ux.widget.FPVWidget
+     android:layout_width="match_parent"
+     android:layout_height="match_parent"
+     android:layout_gravity="center"
+     android:layout_marginBottom="-2dp"/>
+
+<dji.ux.widget.FPVOverlayWidget
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"/>
+
+<dji.ux.workflow.CompassCalibratingWorkFlow
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"/>
+
+<!-- Widgets in top status bar -->
+<LinearLayout
+    android:id="@+id/signal"
+    android:layout_width="match_parent"
+    android:layout_height="25dp"
+    android:background="@color/dark_gray"
+    android:orientation="horizontal">
+
+ <dji.ux.widget.GPSSignalWidget
+     android:layout_width="44dp"
+     android:layout_height="22dp"/>
+
+ <dji.ux.widget.VisionWidget
+     android:layout_width="22dp"
+     android:layout_height="22dp"/>
+
+ <dji.ux.widget.RemoteControlSignalWidget
+     android:layout_width="38dp"
+     android:layout_height="22dp"/>
+
+ <dji.ux.widget.VideoSignalWidget
+     android:layout_width="38dp"
+     android:layout_height="22dp"/>
+
+ <dji.ux.widget.WiFiSignalWidget
+     android:layout_width="22dp"
+     android:layout_height="20dp"/>
+
+ <dji.ux.widget.BatteryWidget
+     android:layout_width="96dp"
+     android:layout_height="22dp"
+     custom:excludeView="singleVoltage"/>
+
+ <dji.ux.widget.ConnectionWidget
+     android:layout_marginTop="3dp"
+     android:layout_width="18dp"
+     android:layout_height="18dp"/>
+</LinearLayout>
+
+
+<LinearLayout
+    android:id="@+id/camera"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_below="@id/signal"
+    android:layout_centerHorizontal="true"
+    android:layout_marginTop="20dp"
+    android:background="@color/dark_gray"
+    android:orientation="horizontal">
+
+ <dji.ux.widget.AutoExposureLockWidget
+     android:layout_width="30dp"
+     android:layout_height="30dp"/>
+
+ <dji.ux.widget.FocusExposureSwitchWidget
+     android:layout_width="30dp"
+     android:layout_height="30dp"/>
+
+ <dji.ux.widget.FocusModeWidget
+     android:layout_width="30dp"
+     android:layout_height="30dp"/>
+
+ <dji.ux.widget.config.CameraConfigISOAndEIWidget
+     android:layout_width="60dp"
+     android:layout_height="30dp"/>
+
+ <dji.ux.widget.config.CameraConfigShutterWidget
+     android:layout_width="60dp"
+     android:layout_height="30dp"/>
+
+ <dji.ux.widget.config.CameraConfigApertureWidget
+     android:layout_width="60dp"
+     android:layout_height="30dp"/>
+
+ <dji.ux.widget.config.CameraConfigEVWidget
+     android:layout_width="60dp"
+     android:layout_height="30dp"/>
+
+ <dji.ux.widget.config.CameraConfigWBWidget
+     android:layout_width="70dp"
+     android:layout_height="30dp"/>
+
+ <dji.ux.widget.config.CameraConfigStorageWidget
+     android:layout_width="130dp"
+     android:layout_height="30dp"/>
+</LinearLayout>
+
+<dji.ux.widget.ManualFocusWidget
+    android:layout_below="@id/camera"
+    android:layout_alignLeft="@id/camera"
+    android:layout_marginLeft="25dp"
+    android:layout_marginTop="5dp"
+    android:layout_width="42dp"
+    android:layout_height="218dp"
+    tools:ignore="RtlHardcoded"/>
+
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_alignParentBottom="true"
+    android:orientation="horizontal"
+    android:padding="12dp">
+
+ <dji.ux.widget.dashboard.DashboardWidget
+     android:id="@+id/Compass"
+     android:layout_width="405dp"
+     android:layout_height="91dp"
+     android:layout_marginRight="12dp"
+     tools:ignore="RtlHardcoded"/>
+
+</LinearLayout>
+
+<dji.ux.widget.controls.CameraControlsWidget
+    android:id="@+id/CameraCapturePanel"
+    android:layout_alignParentRight="true"
+    android:layout_below="@id/camera"
+    android:layout_width="50dp"
+    android:layout_height="213dp"
+    tools:ignore="RtlHardcoded"/>
+
+
+<dji.ux.panel.CameraSettingExposurePanel
+    android:layout_width="180dp"
+    android:layout_below="@id/camera"
+    android:layout_toLeftOf="@+id/CameraCapturePanel"
+    android:background="@color/transparent"
+    android:gravity="center"
+    android:layout_height="263dp"
+    android:visibility="invisible"
+    tools:ignore="RtlHardcoded"/>
+
+<dji.ux.panel.CameraSettingAdvancedPanel
+    android:layout_width="180dp"
+    android:layout_height="263dp"
+    android:layout_below="@id/camera"
+    android:layout_toLeftOf="@+id/CameraCapturePanel"
+    android:background="@color/transparent"
+    android:gravity="center"
+    android:visibility="invisible"
+    tools:ignore="RtlHardcoded"/>
+
+</RelativeLayout>
+```
+
+### 4. Implementing the ConnectionActivity Class
+To improve the user experience, we had better create an activity to show the connection status between the DJI Product and the SDK, once it's connected, the user can press the OPEN button to enter the MainActivity.
+
+In the project navigator, go to app -> java -> com -> riis -> fpv, and right-click on the fpv directory. Select New -> Kotlin Class/File to create a new kotlin class and name it as ConnectionActivity.kt.
+
+Next, replace the code of the ConnectionActivity.kt file with the following:
+```kotlin
+package com.riis.cameraapp
+
+import android.Manifest
+import android.content.Intent
+import androidx.appcompat.app.AppCompatActivity
+import android.os.Bundle
+import android.widget.Button
+import android.widget.TextView
+import androidx.activity.viewModels
+import androidx.core.app.ActivityCompat
+import androidx.lifecycle.Observer
+import com.riis.cameraapp.R
+import dji.sdk.sdkmanager.DJISDKManager
+
+/*
+This activity manages SDK registration and establishing a connection between the
+DJI product and the user's mobile phone.
+ */
+class ConnectionActivity : AppCompatActivity() {
+
+    //Class Variables
+    private lateinit var mTextConnectionStatus: TextView
+    private lateinit var mTextProduct: TextView
+    private lateinit var mTextModelAvailable: TextView
+    private lateinit var mBtnOpen: Button
+    private lateinit var mVersionTv: TextView
+
+    private val model: ConnectionViewModel by viewModels() //linking the activity to a viewModel
+
+    companion object {
+        const val TAG = "ConnectionActivity"
+    }
+
+    //Creating the Activity
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        //inflating the activity_connection.xml layout as the activity's view
+        setContentView(R.layout.activity_connection)
+
+        /*
+        Request the following permissions defined in the AndroidManifest.
+        1 is the integer constant we chose to use when requesting app permissions
+        */
+        ActivityCompat.requestPermissions(this,
+            arrayOf(
+                Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                Manifest.permission.VIBRATE,
+                Manifest.permission.INTERNET,
+                Manifest.permission.ACCESS_WIFI_STATE,
+                Manifest.permission.WAKE_LOCK,
+                Manifest.permission.ACCESS_COARSE_LOCATION,
+                Manifest.permission.ACCESS_NETWORK_STATE,
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.CHANGE_WIFI_STATE,
+                Manifest.permission.MOUNT_UNMOUNT_FILESYSTEMS,
+                Manifest.permission.READ_EXTERNAL_STORAGE,
+                Manifest.permission.SYSTEM_ALERT_WINDOW,
+                Manifest.permission.READ_PHONE_STATE
+            ), 1)
+
+        //Initialize the UI, register the app with DJI's mobile SDK, and set up the observers
+        initUI()
+        model.registerApp()
+        observers()
+    }
+
+    //Function to initialize the activity's UI
+    private fun initUI() {
+
+        //referencing the layout views using their resource ids
+        mTextConnectionStatus = findViewById(R.id.text_connection_status)
+        mTextModelAvailable = findViewById(R.id.text_model_available)
+        mTextProduct = findViewById(R.id.text_product_info)
+        mBtnOpen = findViewById(R.id.btn_open)
+        mVersionTv = findViewById(R.id.textView2)
+
+        //Getting the DJI SDK version and displaying it on mVersionTv TextView
+        mVersionTv.text = resources.getString(R.string.sdk_version, DJISDKManager.getInstance().sdkVersion)
+
+        mBtnOpen.isEnabled = false //mBtnOpen Button is initially disabled
+
+        //If mBtnOpen Button is clicked on, start MainActivity (only works when button is enabled)
+        mBtnOpen.setOnClickListener {
+            val intent = Intent(this, MainActivity::class.java)
+            startActivity(intent)
+        }
+    }
+
+    //Function to setup observers
+    private fun observers() {
+        //observer listens to changes to the connectionStatus variable stored in the viewModel
+        model.connectionStatus.observe(this, Observer<Boolean> { isConnected ->
+            //If boolean is True, enable mBtnOpen button. If false, disable the button.
+            if (isConnected) {
+                mTextConnectionStatus.text = "Status: Connected"
+                mBtnOpen.isEnabled = true
+            }
+            else {
+                mTextConnectionStatus.text = "Status: Disconnected"
+                mBtnOpen.isEnabled = false
+            }
+        })
+
+        /*
+        Observer listens to changes to the product variable stored in the viewModel.
+        product is a BaseProduct object and represents the DJI product connected to the mobile device
+        */
+        model.product.observe(this, Observer { baseProduct ->
+            //if baseProduct is connected to the mobile device, display its firmware version and model name.
+            if (baseProduct != null && baseProduct.isConnected) {
+                mTextModelAvailable.text = baseProduct.firmwarePackageVersion
+
+                //name of the aircraft attached to the remote controller
+                mTextProduct.text = baseProduct.model.displayName
+            }
+        })
+    }
+}
+```
+In the code shown above, we implement the following:
+
+1. Create the layout UI elements variables, including four TextViews `mTextConnectionStatus`, `mTextProduct`, `mTextModelAvailable`, `mVersionTv` and one Button `mBtnOpen`.
+
+2. Link the activity to a ViewModel that stores the connection state and DJI SDK functions
+
+3. In the `onCreate()` method, we request all the neccessary permissions for this application to work using the `ActivityCompat.requestPermissions()` method. We then invoke the `initUI()` method to initialize the four TextViews and the Button. We also setup the observers for this activity using the `observers()` method.
+
+4. In the `initUI()` method, The `mBtnOpen` button is initially diabled. We invoke the `setOnClickListener()` method of `mBtnOpen` and set the Button's click action to start the MainActivity (only works when button is enabled). The `mVersionTv` TextView is set to display the DJI SDK version.
+
+5. In the `observers()` method, we are observing changes (from the ViewModel) to the connection state between app and the DJI product as well as any changes to the product itself. Based on this, the `mTextConnectionStatus` will display the connection status, `mTextProduct` will the display the product's name, and `mTextModelAvailable` will display the DJI product's firmware version. If a DJI product is connected, the `mBtnOpen` Button becomes enabled.
+
+### 6. Implementing the ConnectionActivity Layout
+Open the `activity_connection.xml` layout file and replace the code with the following:
+```xml
+<?xml version="1.0" encoding="utf-8"?>  
+<RelativeLayout  
+  xmlns:android="http://schemas.android.com/apk/res/android"  
+  xmlns:tools="http://schemas.android.com/tools"  
+  xmlns:app="http://schemas.android.com/apk/res-auto"  
+  android:layout_width="match_parent"  
+  android:layout_height="match_parent"  
+  tools:context=".ConnectionActivity">  
+  
+ <TextView  android:id="@+id/text_connection_status"  
+  android:layout_width="wrap_content"  
+  android:layout_height="wrap_content"  
+  android:layout_alignBottom="@+id/text_product_info"  
+  android:layout_centerHorizontal="true"  
+  android:layout_marginBottom="89dp"  
+  android:gravity="center"  
+  android:text="Status: No Product Connected"  
+  android:textColor="@android:color/black"  
+  android:textSize="20dp"  
+  android:textStyle="bold" />  
+  
+ <TextView  android:id="@+id/text_product_info"  
+  android:layout_width="wrap_content"  
+  android:layout_height="wrap_content"  
+  android:layout_centerHorizontal="true"  
+  android:layout_marginTop="270dp"  
+  android:text="@string/product_information"  
+  android:textColor="@android:color/black"  
+  android:textSize="20dp"  
+  android:gravity="center"  
+  android:textStyle="bold"  
+  />  
+  
+ <TextView  android:id="@+id/text_model_available"  
+  android:layout_width="match_parent"  
+  android:layout_height="wrap_content"  
+  android:layout_centerHorizontal="true"  
+  android:gravity="center"  
+  android:layout_marginTop="300dp"  
+  android:text="@string/model_not_available"  
+  android:textSize="15dp"/>  
+  
+ <Button  android:id="@+id/btn_open"  
+  android:layout_width="150dp"  
+  android:layout_height="55dp"  
+  android:layout_centerHorizontal="true"  
+  android:layout_marginTop="350dp"  
+  android:background="@drawable/round_btn"  
+  android:text="Open"  
+  android:textColor="@color/colorWhite"  
+  android:textSize="20dp"  
+  />  
+  
+ <TextView  android:layout_width="wrap_content"  
+  android:layout_height="wrap_content"  
+  android:layout_centerHorizontal="true"  
+  android:layout_marginTop="430dp"  
+  android:text="@string/sdk_version"  
+  android:textSize="15dp"  
+  android:id="@+id/textView2" />  
+  
+ <TextView  android:id="@+id/textView"  
+  android:layout_width="wrap_content"  
+  android:layout_height="wrap_content"  
+  android:layout_marginTop="58dp"  
+  android:text="@string/app_name"  
+  android:textAppearance="?android:attr/textAppearanceSmall"  
+  android:textColor="@color/black_overlay"  
+  android:textSize="20dp"  
+  android:textStyle="bold"  
+  android:layout_alignParentTop="true"  
+  android:layout_centerHorizontal="true" />  
+  
+</RelativeLayout>
+```
+In the xml file, we create four TextViews and one Button within a RelativeLayout. We use the `TextView(id:` `text_connection_status)` to show the product connection status and use the `TextView(id:text_product_info)` to show the connected product name. The `Button(id: btn_open)` is used to open the **MainActivity**.
+
+### 6. Implementing the ConnectionViewModel Class
+To store important variables and functions needed for mobile SDK registration and connection to the DJI product, an AndroidViewModel class is needed. This allows the app to maintain its connection state across rotation death.
+
+In the project navigator, go to **app -> java -> com -> riis -> fpv**, and right-click on the fpv directory. Select **New -> Kotlin Class/File** to create a new kotlin class and name it as `ConnectionViewModel.kt`.
+
+Next, replace the code of the `ConnectionViewModel.kt` file with the following:
+```kotlin
+import android.app.Application
+import android.util.Log
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.MutableLiveData
+import dji.common.error.DJIError
+import dji.common.error.DJISDKError
+import dji.sdk.base.BaseComponent
+import dji.sdk.base.BaseProduct
+import dji.sdk.sdkmanager.DJISDKInitEvent
+import dji.sdk.sdkmanager.DJISDKManager
+
+/*
+This ViewModel stores important variables and functions needed for mobile SDK registration
+and connection to the DJI product. This allows the app to maintain its connection state
+across rotation death.
+ */
+class ConnectionViewModel(application: Application) : AndroidViewModel(application) {
+
+    //product is a BaseProduct object which stores an instance of the currently connected DJI product
+    val product: MutableLiveData<BaseProduct?> by lazy {
+        MutableLiveData<BaseProduct?>()
+    }
+
+    //connectionStatus boolean describes whether or not a DJI product is connected
+    val connectionStatus: MutableLiveData<Boolean> = MutableLiveData(false)
+
+    //DJI SDK app registration
+    fun registerApp() {
+        /*
+        Getting an instance of the DJISDKManager and using it to register the app
+        (requires API key in AndroidManifest). After installation, the app connects to the DJI server via
+        internet and verifies the API key. Subsequent app starts will use locally cached verification
+        information to register the app when the cached information is still valid.
+        */
+        DJISDKManager.getInstance().registerApp(getApplication(), object: DJISDKManager.SDKManagerCallback {
+            //Logging the success or failure of the registration
+            override fun onRegister(error: DJIError?) {
+                if (error == DJISDKError.REGISTRATION_SUCCESS) {
+                    Log.i(ConnectionActivity.TAG, "onRegister: Registration Successful")
+                } else {
+                    Log.i(ConnectionActivity.TAG, "onRegister: Registration Failed - ${error?.description}")
+                }
+            }
+            //called when the remote controller disconnects from the user's mobile device
+            override fun onProductDisconnect() {
+                Log.i(ConnectionActivity.TAG, "onProductDisconnect: Product Disconnected")
+                connectionStatus.postValue(false) //setting connectionStatus to false
+            }
+            //called when the remote controller connects to the user's mobile device
+            override fun onProductConnect(baseProduct: BaseProduct?) {
+                Log.i(ConnectionActivity.TAG, "onProductConnect: Product Connected")
+                product.postValue(baseProduct)
+                connectionStatus.postValue(true) //setting connectionStatus to true
+            }
+            //called when the DJI aircraft changes
+            override fun onProductChanged(baseProduct: BaseProduct?) {
+                Log.i(ConnectionActivity.TAG, "onProductChanged: Product Changed - $baseProduct")
+                product.postValue(baseProduct)
+
+            }
+            //Called when a component object changes. This method is not called if the component is already disconnected
+            override fun onComponentChange(componentKey: BaseProduct.ComponentKey?, oldComponent: BaseComponent?, newComponent: BaseComponent?) {
+                //Alert the user which component has changed, and mention what new component replaced the old component (can be null)
+                Log.i(ConnectionActivity.TAG, "onComponentChange key: $componentKey, oldComponent: $oldComponent, newComponent: $newComponent")
+
+                //Listens to connectivity changes in each new component
+                newComponent?.let { component ->
+                    component.setComponentListener { connected ->
+                        Log.i(ConnectionActivity.TAG, "onComponentConnectivityChange: $connected")
+                    }
+                }
+            }
+            //called when loading SDK resources
+            override fun onInitProcess(p0: DJISDKInitEvent?, p1: Int) {}
+
+            //Called when Fly Safe database download progress is updated
+            override fun onDatabaseDownloadProgress(p0: Long, p1: Long) {}
+        })
+    }
+}
+```
+Here, we implement several features:
+
+* variable product is used to store an instance of the currently connected DJI product
+* variable connectionStatus describes whether or not a DJI product is connected
+* The app is registered with the DJI SDK and an instance of `SDKManagerCallback` is initialized to provide feedback from the SDK.
+* Four interface methods of `SDKManagerCallback` are used. The `onRegister()` method is used to check the Application registration status and show text message here. When the product is connected or disconnected, the `onProductConnect()` and `onProductDisconnect()` methods will be invoked. Moreover, we use the `onComponentChange()` method to check the component changes.
+~~~~
+Note: Permissions must be requested by the application and granted by the user in order to register the DJI SDK correctly. This is taken care of in ConnectionActivity before it calls on the ViewModel's registerApp() method. Furthermore, the camera and USB hardwares must be declared in the AndroidManifest for DJI SDK to work.
+~~~~
