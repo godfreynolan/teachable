@@ -547,7 +547,10 @@ tools:context=".MainActivity">
 
 </RelativeLayout>
 ```
-In the xml file, we created each widget to access the DJI UXSDK widget elements for the app to use. More widgets can be found on the DJI UXSDK documentation page. 
+In the xml file, we created each widget to access the DJI UXSDK widget elements for the app to use. More widgets can be found on the DJI UXSDK documentation page. Most importantly, we add the following elements for the most important features of the app.
+1. `<dji.ux.widget.FPVWidget/>` allows the application to see the FPV of the camera from the drone. Normally this would be done with a textureView however the UX widget allows us to skip that step.
+2. `<dji.ux.widget.controls.CameraControlsWidget/>` allows the application to take a picture or record a video.
+3. Everything added to `<LinearLayout android:id="@+id/camera"/>` allows the camera to work, including but not limited to storing pictures, automatically focusing, and adjusting light exposure. 
 
 ### 4. Implementing the ConnectionActivity Class
 To improve the user experience, we had better create an activity to show the connection status between the DJI Product and the SDK, once it's connected, the user can press the OPEN button to enter the MainActivity.
@@ -928,7 +931,7 @@ After you finish the above steps, let's register our application with the App Ke
 4. In the code above, you should substitute your App Key of the application for "Please enter your App Key here." in the value attribute under the `android:name="com.dji.sdk.API_KEY` attribute.
 5. Lastly, update the "MainActivity" and "ConnectionActivity" `<activity>` elements as shown below:
    
-```kotlin
+```xml
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
