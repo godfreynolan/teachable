@@ -90,6 +90,10 @@ plugins {
     id 'kotlin-android'
 }
 
+Properties properties = new Properties()
+properties.load(project.rootProject.file('local.properties').newDataInputStream())
+def djiKey = properties.getProperty('DJI_API_KEY')
+
 android {
     namespace 'com.riis.cameraapp'
     compileSdkVersion 31
@@ -543,6 +547,7 @@ tools:context=".MainActivity">
 
 </RelativeLayout>
 ```
+In the xml file, we created each widget to access the DJI UXSDK widget elements for the app to use. More widgets can be found on the DJI UXSDK documentation page. 
 
 ### 4. Implementing the ConnectionActivity Class
 To improve the user experience, we had better create an activity to show the connection status between the DJI Product and the SDK, once it's connected, the user can press the OPEN button to enter the MainActivity.
@@ -683,7 +688,7 @@ In the code shown above, we implement the following:
 
 5. In the `observers()` method, we are observing changes (from the ViewModel) to the connection state between app and the DJI product as well as any changes to the product itself. Based on this, the `mTextConnectionStatus` will display the connection status, `mTextProduct` will the display the product's name, and `mTextModelAvailable` will display the DJI product's firmware version. If a DJI product is connected, the `mBtnOpen` Button becomes enabled.
 
-### 6. Implementing the ConnectionActivity Layout
+### 5. Implementing the ConnectionActivity Layout
 Open the `activity_connection.xml` layout file and replace the code with the following:
 ```xml
 <?xml version="1.0" encoding="utf-8"?>  
@@ -860,3 +865,176 @@ Here, we implement several features:
 ~~~~
 Note: Permissions must be requested by the application and granted by the user in order to register the DJI SDK correctly. This is taken care of in ConnectionActivity before it calls on the ViewModel's registerApp() method. Furthermore, the camera and USB hardwares must be declared in the AndroidManifest for DJI SDK to work.
 ~~~~
+
+### 8. Configuring the Resource XMLs
+Once you finish the above steps, let's copy all the images (xml files) from this Github project's drawable folder **(app -> res -> drawable)** to the same folder in your project. Their names can be found below. 
+* round_btn.xml
+* round_btn_disable.xml
+* round_btn_normal.xml
+* rount_btn_pressed.xml
+These images are used in the ConnectionActivity class and must be imported otherwise the project will not build. 
+Moreover, open the `colors.xml` file and update the content as shown below:
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="black_overlay">#000000</color>
+    <color name="colorWhite">#FFFFFF</color>
+    <color name="background_blue">#242d34</color>
+    <color name="transparent">#00000000</color>
+    <color name="dark_gray">#80000000</color>
+</resources>
+```
+Furthermore, open the `strings.xml` file and replace the content with the following:
+```xml
+<resources>  
+ <string name="app_name">DJIFPV-Kotlin</string>  
+ <string name="action_settings">Settings</string>  
+ <string name="disconnected">Disconnected</string>  
+ <string name="product_information">Product Information</string>  
+ <string name="connection_loose">Status: No Product Connected</string>  
+ <string name="model_not_available">Model Not Available</string>  
+ <string name="push_info">Push Info</string>  
+ <string name="sdk_version">DJI SDK Version: %1$s</string>  
+</resources>
+```
+Lastly, create `styles.xml` and replace the content with the following:
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="status_text">
+        <item name="android:shadowColor">@color/black_overlay</item>
+        <item name="android:shadowDx">2</item>
+        <item name="android:shadowDy">1</item>
+        <item name="android:shadowRadius">6</item>
+        <item name="android:textSize">17sp</item>
+        <item name="android:textColor">@color/white</item>
+    </style>
+</resources>
+```
+
+## Registering the Application
+After you finish the above steps, let's register our application with the App Key you obtain from the DJI Developer Website. If you are not familiar with the App Key, please check the [Get Started](https://developer.dji.com/mobile-sdk/documentation/quick-start/index.html).
+
+1. Let's open the `AndroidManifest.xml` file and specify the permissions that your application needs by adding `<uses-permission>` elements into the `<manifest>` element of the `AndroidManifest.xml` file. We also need to declare the camera and USB hardwares using `<uses-feature>` child elements since they will be used by the application.
+2. Next, add `android:name=".MApplication"` inside of the `<application>` element in the `AndroidManifest.xml` file
+3. Moreover, let's add the following elements as childs of the `<application>` element, right on top of the "ConnectionActivity" `<activity>` element as shown below
+4. In the code above, you should substitute your App Key of the application for "Please enter your App Key here." in the value attribute under the `android:name="com.dji.sdk.API_KEY` attribute.
+5. Lastly, update the "MainActivity" and "ConnectionActivity" `<activity>` elements as shown below:
+   
+```kotlin
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.riis.cameraapp">
+
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <uses-permission android:name="android.permission.MOUNT_UNMOUNT_FILESYSTEMS"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        tools:ignore="ScopedStorage" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+
+    <uses-feature android:name="android.hardware.camera" />
+    <uses-feature android:name="android.hardware.camera.autofocus" />
+    <uses-feature
+        android:name="android.hardware.usb.host"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.usb.accessory"
+        android:required="true" />
+
+    <application
+        android:name="com.riis.cameraapp.MApplication"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.CameraApp">
+
+        <!-- DJI SDK -->
+        <uses-library android:name="com.android.future.usb.accessory" />
+        <uses-library
+            android:name="org.apache.http.legacy"
+            android:required="false" />
+        <meta-data
+            android:name="com.dji.sdk.API_KEY"
+            android:value="${DJI_API_KEY}" />
+        <!-- DJI SDK -->
+
+        <activity
+            android:name=".ConnectionActivity"
+            android:screenOrientation="portrait"
+            android:launchMode="singleTop"
+            android:configChanges="orientation"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.hardware.usb.action.USB_ACCESSORY_ATTACHED" />
+            </intent-filter>
+            <meta-data
+                android:name="android.hardware.usb.action.USB_ACCESSORY_ATTACHED"
+                android:resource="@xml/accessory_filter"/>
+        </activity>
+
+        <activity android:name=".MainActivity"
+            android:screenOrientation="userLandscape"
+            android:exported="true"/>
+    </application>
+
+</manifest>
+```
+In the code above, we add the attributes of `android:screenOrientation` to set "ConnectionActivity" as **portrait** and set "MainActivity" as **landscape**.
+
+We must now add the accessory filter file to the project. With this file, the app can determine what devices are being plugged into the Android phone. Create a new Directory under **app/res/** called `xml`, if one has not already been made. Then, right click the newly created folder and create a new **XML Resource File** called `accessory_filter.xml`. Then press **OK**. Inside this resource file, replace all pre-existing code with the following code. The user will now be prompted to open the app when DJI controllers are plugged in.
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <usb-accessory model="T600" manufacturer="DJI"/>
+    <usb-accessory model="AG410" manufacturer="DJI"/>
+    <usb-accessory model="com.dji.logiclink" manufacturer="DJI"/>
+    <usb-accessory model="WM160" manufacturer="DJI"/>
+</resources>
+```
+
+One final task must be completed before the DJI drone is able to be connected to the mobile device. In your `local.properties` gradle file, add the following line, however replace `"INSERT API KEY HERE"` with the API key you obtained from the previous steps. 
+```gradle
+DJI_API_KEY="INSERT API KEY HERE"
+```
+
+~~~~
+Congratulations! Your Aerial FPV android app is complete, you can now use this app to control the camera of your DJI Product now.
+~~~~
+
+## Summary
+In this tutorial, you’ve learned how to use DJI Mobile SDK to show the FPV View from the aircraft's camera and control the camera of DJI's Aircraft to shoot photo and record video. These are the most basic and common features in a typical drone mobile app: Capture and Record. However, if you want to create a drone app which is more fancy, you still have a long way to go. More advanced features should be implemented, including previewing the photo and video in the SD Card, showing the OSD data of the aircraft and so on. Hope you enjoy this tutorial, and stay tuned for our next one!
+
+## License
+MIT
