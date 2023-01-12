@@ -207,6 +207,7 @@ The `packagingOptions` block is used to configure settings for packaging the app
 The `dependencies` block is used to specify the dependencies for the application. The application depends on several libraries such as `androidx.documentfile:documentfile:1.0.1`, `androidx.multidex:multidex:2.0.0`, and `com.dji:dji-sdk:4.16`, `com.dji:dji-uxsdk:4.16`, `org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.2` and more. The dependencies are specified using the `implementation` and `compileOnly` configuration.
 
 **Android Jetifier**
+
 Please **add** the following line to the `gradle.properties` file
 ```kotlin
 android.enableJetifier=true
