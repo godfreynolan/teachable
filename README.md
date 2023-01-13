@@ -377,6 +377,22 @@ class MainActivity : AppCompatActivity(), TextureView.SurfaceTextureListener, Vi
     }
 }
 ```
+The purpose of this code is to provide an interface for an Android application that allows the user to access and control a connected DJI product's camera. The code uses the DJI SDK to interact with the camera and receives video data from the DJI product and sends it to the codec manager for decoding. The `MainActivity` class implements the `TextureView.SurfaceTextureListener` and `View.OnClickListener` interfaces and overrides their methods to handle the display and handling of the video feed.
+
+Here are explanations of some of the key functions in the code:
+
+- `onCreate()` function: This function is called when the activity is first created. It sets the layout for the activity by inflating the activity_main.xml layout and it also sets up the receivedVideoDataListener which receives the raw video data from the DJI product and sends it to the codec manager for decoding.
+
+- `initPreviewer()` function: This function initializes the display for the videoSurface TextureView. It gets an instance of the connected DJI product, and if the product is not connected, it alerts the user. If the product is connected, it adds the receivedVideoDataListener to the primary video feed.
+
+- `onResume()` function: This function is called when the activity is resumed after being paused or stopped. It calls the initPreviewer function to initialize the video feed display.
+
+- `onSurfaceTextureAvailable()` function: This function is called when the TextureView's SurfaceTexture is ready for use. It uses the SurfaceTexture to initialize the codecManager.
+
+- `onSurfaceTextureDestroyed()` function: This function is called when a SurfaceTexture is about to be destroyed. It un-initializes the codecManager to release the resources.
+
+- `onClick()` function: This function handles what happens when certain layout views are clicked. In this example it is empty but it can be used to handle user actions such as taking photos or recording videos.
+
 ### 3. Implementing the MainActivity Layout
 Open the activity_main.xml layout file and replace the code with the following:
 ```xml
