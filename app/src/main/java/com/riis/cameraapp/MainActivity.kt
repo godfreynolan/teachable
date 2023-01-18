@@ -1,6 +1,8 @@
 package com.riis.cameraapp
 
+import android.content.Intent
 import android.graphics.SurfaceTexture
+import android.hardware.usb.UsbManager
 import android.os.Bundle
 import android.view.TextureView
 import android.view.View
@@ -122,6 +124,17 @@ class MainActivity : AppCompatActivity(), TextureView.SurfaceTextureListener, Vi
                 (getProductInstance() as HandHeld).camera
             }
             else -> null
+        }
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+
+        val action = intent?.action
+        if (UsbManager.ACTION_USB_ACCESSORY_ATTACHED == action) {
+            val attachedIntent = Intent()
+            attachedIntent.action = DJISDKManager.USB_ACCESSORY_ATTACHED
+            sendBroadcast(attachedIntent)
         }
     }
 }
