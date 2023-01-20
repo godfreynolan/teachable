@@ -1,10 +1,11 @@
-# Creating a Camera App w/ DJI Widgets Tutorial
+# Creating a Camera App w/ Live Streaming Tutorial
 ## Pre-requisite Knowledge
 ***`WARNING: THIS TUTORIAL ASSUMES YOU'VE COMPLETED THE PREVIOUS TUTORIALS`***
 
-This tutorial is designed for you to gain a basic understanding of the DJI Mobile SDK. It will implement the FPV view and two basic camera functionalities: 
+This tutorial is designed for you to gain a basic understanding of the DJI Mobile SDK and a simple RTMP livestream. It will implement the FPV view and two basic camera functionalities: 
 - Take Photo
 - Record video.
+- Livestrean your screen
 
 You can download the tutorial's final sample project from this [Github Page](https://github.com/riis/teachable). <!-- Make sure to update when committed-->
 
@@ -47,39 +48,42 @@ Please replace **everything** in the `build.gradle (Project)` with:
 ```kotlin
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 buildscript {
+    // Declare variable to store the kotlin version
     ext.kotlin_version = '1.6.10'
     repositories {
+        // Add Google's Maven repository as a dependency source
         google()
+        // Add Maven Central as a dependency source
         mavenCentral()
     }
     dependencies {
+        // Add Android gradle plugin as a dependency
         classpath 'com.android.tools.build:gradle:7.0.4'
+        // Add Kotlin gradle plugin as a dependency
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-
-        // NOTE: Do not place your application dependencies here; they belong
-        // in the individual module build.gradle files
+        // Note: Do not place your application dependencies here; they belong in the individual module build.gradle files
     }
 }
 
 allprojects {
     repositories {
+        // Add Google's Maven repository as a dependency source
         google()
+        // Add Jcenter as a dependency source
         jcenter()
+        // Add Maven Central as a dependency source
         mavenCentral()
+        // Add JitPack repository as a dependency source
+        maven { url 'https://jitpack.io' }
     }
 }
 
+// create a gradle task that delete the build directory when executed
 task clean(type: Delete) {
+    // delete the root project build directory
     delete rootProject.buildDir
 }
 ```
-This is a Gradle build file, which is used to configure and manage the build process for a project.
-
-The first block, `buildscript`, is used to configure the build script for the project. Within this block, the Kotlin version being used is defined as `1.6.10` and the repositories that will be used to resolve dependencies are specified as `google()`, `mavenCentral()`. The dependencies that are needed for the build script are also defined here, including the Android Gradle plugin and the Kotlin Gradle plugin. It's important to note that application dependencies should not be placed here and should instead be placed in the individual module build files.
-
-The next block, `allprojects`, is used to configure the settings for all projects within the build. In this case, the block is used to specify the repositories that will be used to resolve dependencies for all projects as `google()`, `jcenter()`, and `mavenCentral()`.
-
-Finally, the last block is defining a task called `clean`, which is of type `Delete`. This task is used to delete the `rootProject.buildDir` when the task is executed. This is typically used to clean the build files and prepare for a fresh build.
 
 **build.gradle (Module)**
 Please replace **everything** in the `build.gradle (Module)` with:
@@ -88,6 +92,8 @@ Please replace **everything** in the `build.gradle (Module)` with:
 plugins {
     id 'com.android.application'
     id 'kotlin-android'
+    id 'kotlin-android-extensions'
+    id 'kotlin-kapt'
 }
 
 Properties properties = new Properties()
@@ -98,14 +104,18 @@ android {
     namespace 'com.riis.cameraapp'
     compileSdkVersion 31
     buildToolsVersion "30.0.3"
+    dataBinding {
+        enabled = true
+    }
 
     defaultConfig {
-        manifestPlaceholders = [DJI_API_KEY: djiKey]
         applicationId 'com.riis.cameraapp'
         minSdkVersion 21
         targetSdkVersion 30
         versionCode 1
         multiDexEnabled true
+        manifestPlaceholders = [DJI_API_KEY: djiKey]
+        buildConfigField "String", "TWITCH_KEY", properties['TWITCH_KEY']
         versionName "1.0"
         ndk {
             // On x86 devices that run Android API 23 or above, if the application is targeted with API 23 or
@@ -176,39 +186,52 @@ dependencies {
 
     // ViewModels and Coroutines
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.2'
-    implementation("androidx.core:core-ktx:1.3.2")
+    implementation("androidx.core:core-ktx:1.5.0")
     implementation("androidx.fragment:fragment-ktx:1.2.4")
 
+    implementation 'com.github.pedroSG94.rtmp-rtsp-stream-client-java:rtplibrary:2.2.2'
+    implementation 'org.greenrobot:eventbus:3.2.0'
 
     //Default
     implementation fileTree(dir: "libs", include: ["*.jar"])
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-    implementation 'androidx.lifecycle:lifecycle-extensions:2.0.0-rc01'
+    implementation 'androidx.lifecycle:lifecycle-extensions:2.2.0'
+    implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.2.0'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.2.0'
+    implementation 'androidx.navigation:navigation-fragment-ktx:2.3.5'
+    implementation 'androidx.navigation:navigation-ui-ktx:2.3.5'
     implementation 'androidx.annotation:annotation:1.2.0'
     implementation 'androidx.appcompat:appcompat:1.2.0'
     implementation 'com.google.android.material:material:1.3.0'
-    implementation 'androidx.constraintlayout:constraintlayout:2.0.4'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.2'
     testImplementation 'junit:junit:4.+'
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
 }
 ```
+This code is a build script for an Android app. It defines the app's build configuration, including dependencies, build types, and packaging options.
 
-This is also a Gradle build file for an Android application that uses the Kotlin programming language.
+In the first line, it applies 4 plugins:
 
-At the top of the file, the `plugins` block is used to apply two plugins to the project: `com.android.application` and `kotlin-android`. The first plugin is used to build Android applications, while the second plugin is used to build Kotlin Android applications.
+    'com.android.application': the core plugin for building Android apps
+    'kotlin-android': a plugin for working with the Kotlin programming language in Android apps
+    'kotlin-android-extensions': a plugin that provides convenient extension properties for Android views
+    'kotlin-kapt': a plugin for annotation processing in Kotlin
 
-The `android` block is used to configure various settings for the Android application. The `namespace` is set to 'com.riis.cameraapp', `compileSdkVersion` is set to 31 and `buildToolsVersion` is set to "30.0.3"
+Then it loads a properties file named "local.properties" from the root project, and gets the property named "DJI_API_KEY" from this file.
 
-The `defaultConfig` block is used to configure settings for the default build configuration. The `applicationId` is set to 'com.riis.cameraapp', `minSdkVersion` is set to 21, `targetSdkVersion` is set to 30, `versionCode` is set to 1, `multiDexEnabled` is set to true, `versionName` is set to "1.0" and more.
+In the android {} block, it sets up various configurations for the Android app:
 
-The `buildTypes` block is used to configure settings for different build types, such as release and debug. The `minifyEnabled` is set to false, and `proguardFiles` are set to the default ProGuard configuration file and a custom ProGuard configuration file.
+    namespace: package name of the app
+    compileSdkVersion, buildToolsVersion: versions of the Android SDK and build tools used for building the app
+    dataBinding.enabled: whether to enable data binding in the app
+    defaultConfig: various default settings for the app, such as the application ID, SDK versions, version code and name, test instrumentation runner, etc.
+    buildTypes: settings for different build types of the app, such as release and debug
+    compileOptions, kotlinOptions: settings for the Java and Kotlin compilers
+    dexOptions: settings for the dex compiler
+    packagingOptions: settings for the APK packaging process, such as which files to exclude or not to strip
 
-The `compileOptions` block is used to configure the Java version for the project. The `sourceCompatibility` is set to `JavaVersion.VERSION_1_8` and the `targetCompatibility` is also set to `JavaVersion.VERSION_1_8`. The `kotlinOptions` block is used to configure the Kotlin version for the project. The `jvmTarget` is set to '1.8'. The `dexOptions` block is used to configure the maximum heap size for the project. The `javaMaxHeapSize` is set to "4g".
-
-The `packagingOptions` block is used to configure settings for packaging the application. There are several `doNotStrip` options which are used to specify that certain native libraries should not be stripped during packaging. There is also an exclude option for the `META-INF/rxjava.properties` file.
-
-The `dependencies` block is used to specify the dependencies for the application. The application depends on several libraries such as `androidx.documentfile:documentfile:1.0.1`, `androidx.multidex:multidex:2.0.0`, and `com.dji:dji-sdk:4.16`, `com.dji:dji-uxsdk:4.16`, `org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.2` and more. The dependencies are specified using the `implementation` and `compileOnly` configuration.
+Finally, in the dependencies {} block, it specifies the dependencies that the app needs, such as the DJI SDK, androidx libraries, and other libraries.
 
 **Android Jetifier**
 
@@ -222,6 +245,15 @@ Please **replace everything** in the `settings.gradle` with
 ```kotlin
 rootProject.name = "Camera-App"
 include ':app'
+```
+
+#### local.properties
+Please add your API keys here to keep them private by adding the following lines in `local.properties`
+Please replace `<insert api key here>` with your actual API key.
+For more help with getting your twitch key look [here](https://restream.io/integrations/twitch/how-to-find-twitch-stream-key/)
+```
+DJI_API_KEY=<insert api key here>
+TWITCH_KEY="<insert api key here>"
 ```
 
 ### Building the Layouts of Activity
@@ -248,464 +280,337 @@ Here we override the attachBaseContext() method to invoke the install() method o
 
 ### 2. Implementing the MainActivity Class
 The MainActivity.kt file is created by Android Studio by default. Let's replace its code with the following:
+
 ```kotlin
 package com.riis.cameraapp
 
-import android.graphics.SurfaceTexture
+import android.content.Intent
+import android.hardware.usb.UsbManager
 import android.os.Bundle
-import android.view.TextureView
-import android.view.View
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import dji.common.product.Model
-import dji.sdk.base.BaseProduct
-import dji.sdk.camera.Camera
-import dji.sdk.camera.VideoFeeder
-import dji.sdk.codec.DJICodecManager
-import dji.sdk.products.Aircraft
-import dji.sdk.products.HandHeld
 import dji.sdk.sdkmanager.DJISDKManager
 
-/*
-This activity provides an interface to access a connected DJI Product's camera and use
-it to take photos and record videos
-*/
-class MainActivity : AppCompatActivity(), TextureView.SurfaceTextureListener, View.OnClickListener {
-    //listener that is used to receive video data coming from the connected DJI product
-    private var receivedVideoDataListener: VideoFeeder.VideoDataListener? = null
-    private var codecManager: DJICodecManager? = null //handles the encoding and decoding of video data
+class MainActivity : AppCompatActivity() {
 
-    //Creating the Activity
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        setContentView(R.layout.activity_main) //inflating the activity_main.xml layout as the activity's view
-
-        /*
-        The receivedVideoDataListener receives the raw video data and the size of the data from the DJI product.
-        It then sends this data to the codec manager for decoding.
-        */
-        receivedVideoDataListener = VideoFeeder.VideoDataListener { videoBuffer, size ->
-            codecManager?.sendDataToDecoder(videoBuffer, size)
-        }
+        setContentView(R.layout.main_activity)
+        
+        // hide the support action bar
+        supportActionBar?.hide()
     }
 
-    //Function that initializes the display for the videoSurface TextureView
-    private fun initPreviewer() {
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
 
-        //gets an instance of the connected DJI product (null if nonexistent)
-        val product: BaseProduct = getProductInstance() ?: return
+        // check if the intent action is USB_ACCESSORY_ATTACHED
+        val action = intent?.action
+        if (UsbManager.ACTION_USB_ACCESSORY_ATTACHED == action) {
+            // create a new intent with the action USB_ACCESSORY_ATTACHED
+            val attachedIntent = Intent()
+            attachedIntent.action = DJISDKManager.USB_ACCESSORY_ATTACHED
+            // broadcast the intent
+            sendBroadcast(attachedIntent)
+        }
+    }
+}
+```
+This code defines an Android activity called MainActivity that is part of the package com.riis.cameraapp. The activity is a subclass of AppCompatActivity, which is a class from the Android support library that provides compatibility with older versions of Android.
 
-        //if DJI product is disconnected, alert the user
-        if (!product.isConnected) {
-            showToast(getString(R.string.disconnected))
-        } else {
-            /*
-            if the DJI product is connected and the aircraft model is not unknown, add the
-            receivedVideoDataListener to the primary video feed.
-            */
-            if (product.model != Model.UNKNOWN_AIRCRAFT) {
-                receivedVideoDataListener?.let {
-                    VideoFeeder.getInstance().primaryVideoFeed.addVideoDataListener(
-                        it
-                    )
+The onCreate method is called when the activity is first created. In this method, the activity sets its layout by calling setContentView(R.layout.main_activity). The layout is defined in a file called main_activity.xml in the res/layout directory. The supportActionBar?.hide() line hides the action bar of the activity.
+
+The onNewIntent method is called when a new intent is delivered to the activity. In this method, the code first checks if the intent's action is UsbManager.ACTION_USB_ACCESSORY_ATTACHED. If it is, it creates a new intent with the action DJISDKManager.USB_ACCESSORY_ATTACHED and sends it as a broadcast. This broadcast is used by the DJI SDK to handle the USB accessory being attached.
+
+### 3. Implementing the MainActivity Layout
+Open the `main_activity.xml` layout file and replace the code with the following:
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/main_nav_fragment"
+        android:name="androidx.navigation.fragment.NavHostFragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:defaultNavHost="true"
+        app:navGraph="@navigation/main_nav_graph" />
+</FrameLayout>
+```
+This is an XML layout file for an Android app that uses the FrameLayout container. It sets up a FragmentContainerView, which is a view group that can contain fragments, and sets its id to "main_nav_fragment". The FragmentContainerView's width and height are set to match the parent's, and the app:defaultNavHost and app:navGraph attributes are set to "true" and "@navigation/main_nav_graph" respectively. This is likely used to navigate between different fragments within the app using the Navigation component provided by Android Jetpack. The xmlns attributes define namespaces for different tools and resources used in the layout file.
+
+### 4. Implementing the Live stream code
+It's time to implement the live stream part of our app. We're going to be implementing several Kotlin classes in addition to a few xml files.
+
+> Note: It will be normal to come across errors in your code, don't start debugging until everything from the tutorial is done.
+
+In the project navigator, go to app -> java -> com -> riis -> cameraapp, and right-click on the cameraapp directory. Select New -> Package to create a new package and name it as `main` so that the structure looks like `com.riis.cameraapp.main`.
+
+#### MainFragment.kt
+Next in the project navigator, go to app -> java -> com -> riis -> cameraapp -> main, and right-click on the main directory. Select New -> Kotlin Class/File to create a new Kotlin Class and name it as `MainFragment`.
+
+Next, replace the code of the `MainFragment.kt` file with the following:
+```kotlin
+package com.riis.cameraapp.main
+
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.Toast
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.navigation.findNavController
+import com.riis.cameraapp.R
+import com.riis.cameraapp.databinding.MainFragmentBinding
+import dji.keysdk.KeyManager
+import dji.keysdk.ProductKey
+import kotlinx.android.synthetic.main.main_fragment.view.*
+
+class MainFragment : Fragment() {
+    private val missingPermissions = ArrayList<String>()
+    private val requestPermissionCode = 12345
+    private val requiredPermissionList = arrayOf(
+        Manifest.permission.VIBRATE,
+        Manifest.permission.INTERNET,
+        Manifest.permission.ACCESS_WIFI_STATE,
+        Manifest.permission.WAKE_LOCK,
+        Manifest.permission.ACCESS_COARSE_LOCATION,
+        Manifest.permission.ACCESS_NETWORK_STATE,
+        Manifest.permission.ACCESS_FINE_LOCATION,
+        Manifest.permission.CHANGE_WIFI_STATE,
+        Manifest.permission.WRITE_EXTERNAL_STORAGE,
+        Manifest.permission.BLUETOOTH,
+        Manifest.permission.BLUETOOTH_ADMIN,
+        Manifest.permission.READ_EXTERNAL_STORAGE,
+        Manifest.permission.READ_PHONE_STATE,
+        Manifest.permission.RECORD_AUDIO
+    )
+    private val firmKey = ProductKey.create(ProductKey.FIRMWARE_PACKAGE_VERSION)
+
+    private val viewModel: MainViewModel by viewModels()
+
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        val binding = MainFragmentBinding.inflate(inflater, container, false)
+        binding.viewModel = viewModel
+
+        return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        setUpLiveData()
+        checkAndRequestPermissions()
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String?>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        if (requestCode == requestPermissionCode) {
+            for (i in grantResults.indices.reversed()) {
+                if (grantResults[i] == PackageManager.PERMISSION_GRANTED) {
+                    missingPermissions.remove(permissions[i])
                 }
             }
         }
-    }
 
-    //Function that displays toast messages to the user
-    private fun showToast(msg: String?) {
-        runOnUiThread { Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show() }
-    }
-
-    //When the MainActivity is created or resumed, initialize the video feed display
-    override fun onResume() {
-        super.onResume()
-        initPreviewer()
-    }
-
-    //When a TextureView's SurfaceTexture is ready for use, use it to initialize the codecManager
-    override fun onSurfaceTextureAvailable(surface: SurfaceTexture, width: Int, height: Int) {
-        if (codecManager == null) {
-            codecManager = DJICodecManager(this, surface, width, height)
+        if (missingPermissions.isEmpty()) {
+            viewModel.registerDJI(requireActivity())
+        } else {
+            Toast.makeText(requireActivity(), "Missing permissions!!!", Toast.LENGTH_LONG)
+                .show()
         }
     }
 
-    //when a SurfaceTexture's size changes...
-    override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture, width: Int, height: Int) {}
+    private fun checkAndRequestPermissions() {
+        for (eachPermission in requiredPermissionList) {
+            if (ContextCompat.checkSelfPermission(
+                    requireActivity(),
+                    eachPermission
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                missingPermissions.add(eachPermission)
+            }
+        }
 
-    //when a SurfaceTexture is about to be destroyed, un-initialize the codedManager
-    override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
-        codecManager?.cleanSurface()
-        codecManager = null
-        return false
+        if (missingPermissions.isEmpty()) {
+            viewModel.registerDJI(requireActivity())
+        } else {
+            ActivityCompat.requestPermissions(
+                requireActivity(),
+                missingPermissions.toTypedArray(),
+                requestPermissionCode
+            )
+        }
     }
 
-    //When a SurfaceTexture is updated...
-    override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {}
+    private fun setUpLiveData() {
+        viewModel.notifyStatusChanged.observe(viewLifecycleOwner, androidx.lifecycle.Observer {
+            refreshSDKRelativeUI()
+        })
 
-    //Handling what happens when certain layout views are clicked
-    override fun onClick(v: View?) {}
+        viewModel.progressToVideo.observe(viewLifecycleOwner, androidx.lifecycle.Observer {
+            if (it) {
+                requireView().findNavController().navigate(R.id.action_main_to_video)
+                viewModel.progressToVideo.value = false
+            }
+        })
 
-    /*
-    Note:
-    Depending on the DJI product, the mobile device is either connected directly to the drone,
-    or it is connected to a remote controller (RC) which is then used to control the drone.
-    */
-
-    //Function used to get the DJI product that is directly connected to the mobile device
-    private fun getProductInstance(): BaseProduct? {
-        return DJISDKManager.getInstance().product
+        viewModel.promptLogin.observe(viewLifecycleOwner, androidx.lifecycle.Observer {
+            if (it) {
+                viewModel.loginDJIUserAccount(requireContext())
+                viewModel.promptLogin.value = false
+            }
+        })
     }
 
-    /*
-    Function used to get an instance of the camera in use from the DJI product
-    */
-    private fun getCameraInstance(): Camera? {
-        if (getProductInstance() == null) return null
+    private fun refreshSDKRelativeUI() {
+        val mProduct = viewModel.product
 
-        return when {
-            getProductInstance() is Aircraft -> {
-                (getProductInstance() as Aircraft).camera
+        val view = requireView()
+        if (null != mProduct && mProduct.isConnected) {
+            view.open_button.isEnabled = true
+
+            view.connection_status_text_view.text = "Status: Connected"
+
+            if (null != mProduct.model) {
+                view.product_info_text_view.text = mProduct.model.displayName
+            } else {
+                view.product_info_text_view.text = "Product Information"
             }
-            getProductInstance() is HandHeld -> {
-                (getProductInstance() as HandHeld).camera
+
+            if (KeyManager.getInstance() != null) {
+                KeyManager.getInstance().removeKey(firmKey)
+                KeyManager.getInstance().addListener(firmKey) { _, _ ->
+                }
             }
-            else -> null
+        } else {
+            view.open_button.isEnabled = false
+            view.product_info_text_view.text = "Product Information"
+            view.connection_status_text_view.text = "Status: Not Connected"
         }
     }
 }
 ```
-The purpose of this code is to provide an interface for an Android application that allows the user to access and control a connected DJI product's camera. The code uses the DJI SDK to interact with the camera and receives video data from the DJI product and sends it to the codec manager for decoding. The `MainActivity` class implements the `TextureView.SurfaceTextureListener` and `View.OnClickListener` interfaces and overrides their methods to handle the display and handling of the video feed.
+So this is a class in an Android app that handles the main functionality of the app. The class is called "MainFragment" and it is a type of Fragment, which is a kind of Android class that represents a portion of the UI in an app.
 
-Here are explanations of some of the key functions in the code:
+First, the class imports several necessary Android classes and one class from a package called "dji." These imports are necessary for the class to be able to access certain features or functionality in the app.
 
-- `onCreate()` function: This function is called when the activity is first created. It sets the layout for the activity by inflating the activity_main.xml layout and it also sets up the receivedVideoDataListener which receives the raw video data from the DJI product and sends it to the codec manager for decoding.
+Next, the class declares several variables. One of these is an ArrayList of missing permissions, which is used to keep track of any permissions that the app needs but the user has not yet granted. Another variable is a request permission code, which is used when requesting permissions from the user. And there's an array of required permissions, which lists all the permissions that the app needs to function properly. These required permissions include things like access to the device's location, storage, and microphone.
 
-- `initPreviewer()` function: This function initializes the display for the videoSurface TextureView. It gets an instance of the connected DJI product, and if the product is not connected, it alerts the user. If the product is connected, it adds the receivedVideoDataListener to the primary video feed.
+The class also overrides several methods from the Fragment class. The "onCreateView" method is called when the fragment's UI is being created. In this method, the class inflates a layout file and sets up data binding for a MainViewModel.
 
-- `onResume()` function: This function is called when the activity is resumed after being paused or stopped. It calls the initPreviewer function to initialize the video feed display.
+The "onViewCreated" method is called after the fragment's UI is created. In this method, the class sets up LiveData and calls a method to check and request any necessary permissions.
 
-- `onSurfaceTextureAvailable()` function: This function is called when the TextureView's SurfaceTexture is ready for use. It uses the SurfaceTexture to initialize the codecManager.
+The "onRequestPermissionsResult" method is called when the user responds to a permission request. In this method, the class handles the result of the permission request and takes action depending on if all necessary permissions were granted.
 
-- `onSurfaceTextureDestroyed()` function: This function is called when a SurfaceTexture is about to be destroyed. It un-initializes the codecManager to release the resources.
+The class also includes several other methods like "checkAndRequestPermissions", which checks for any missing permissions and requests them if necessary, and "setUpLiveData", which sets up LiveData observation and likely updates the UI with new information.
 
-- `onClick()` function: This function handles what happens when certain layout views are clicked. In this example it is empty but it can be used to handle user actions such as taking photos or recording videos.
+And this is the main functionality of the MainFragment class, it's checking and requesting necessary permissions, registering with DJI, and observing LiveData.
 
-### 3. Implementing the MainActivity Layout
-Open the activity_main.xml layout file and replace the code with the following:
-```xml
-<?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-xmlns:tools="http://schemas.android.com/tools"
-xmlns:custom="http://schemas.android.com/apk/res-auto"
-android:layout_width="match_parent"
-android:layout_height="match_parent"
-android:orientation="vertical"
-tools:context=".MainActivity">
+#### MainViewModel.kt
+Next in the project navigator, go to app -> java -> com -> riis -> cameraapp -> main, and right-click on the main directory. Select New -> Kotlin Class/File to create a new Kotlin Class and name it as `MainViewModel`.
 
-<!-- Widget to see first person view (FPV) -->
- <dji.ux.widget.FPVWidget
-     android:layout_width="match_parent"
-     android:layout_height="match_parent"
-     android:layout_gravity="center"
-     android:layout_marginBottom="-2dp"/>
-
-<dji.ux.widget.FPVOverlayWidget
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"/>
-
-<dji.ux.workflow.CompassCalibratingWorkFlow
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"/>
-
-<!-- Widgets in top status bar -->
-<LinearLayout
-    android:id="@+id/signal"
-    android:layout_width="match_parent"
-    android:layout_height="25dp"
-    android:background="@color/dark_gray"
-    android:orientation="horizontal">
-
- <dji.ux.widget.GPSSignalWidget
-     android:layout_width="44dp"
-     android:layout_height="22dp"/>
-
- <dji.ux.widget.VisionWidget
-     android:layout_width="22dp"
-     android:layout_height="22dp"/>
-
- <dji.ux.widget.RemoteControlSignalWidget
-     android:layout_width="38dp"
-     android:layout_height="22dp"/>
-
- <dji.ux.widget.VideoSignalWidget
-     android:layout_width="38dp"
-     android:layout_height="22dp"/>
-
- <dji.ux.widget.WiFiSignalWidget
-     android:layout_width="22dp"
-     android:layout_height="20dp"/>
-
- <dji.ux.widget.BatteryWidget
-     android:layout_width="96dp"
-     android:layout_height="22dp"
-     custom:excludeView="singleVoltage"/>
-
- <dji.ux.widget.ConnectionWidget
-     android:layout_marginTop="3dp"
-     android:layout_width="18dp"
-     android:layout_height="18dp"/>
-</LinearLayout>
-
-
-<LinearLayout
-    android:id="@+id/camera"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:layout_below="@id/signal"
-    android:layout_centerHorizontal="true"
-    android:layout_marginTop="20dp"
-    android:background="@color/dark_gray"
-    android:orientation="horizontal">
-
- <dji.ux.widget.AutoExposureLockWidget
-     android:layout_width="30dp"
-     android:layout_height="30dp"/>
-
- <dji.ux.widget.FocusExposureSwitchWidget
-     android:layout_width="30dp"
-     android:layout_height="30dp"/>
-
- <dji.ux.widget.FocusModeWidget
-     android:layout_width="30dp"
-     android:layout_height="30dp"/>
-
- <dji.ux.widget.config.CameraConfigISOAndEIWidget
-     android:layout_width="60dp"
-     android:layout_height="30dp"/>
-
- <dji.ux.widget.config.CameraConfigShutterWidget
-     android:layout_width="60dp"
-     android:layout_height="30dp"/>
-
- <dji.ux.widget.config.CameraConfigApertureWidget
-     android:layout_width="60dp"
-     android:layout_height="30dp"/>
-
- <dji.ux.widget.config.CameraConfigEVWidget
-     android:layout_width="60dp"
-     android:layout_height="30dp"/>
-
- <dji.ux.widget.config.CameraConfigWBWidget
-     android:layout_width="70dp"
-     android:layout_height="30dp"/>
-
- <dji.ux.widget.config.CameraConfigStorageWidget
-     android:layout_width="130dp"
-     android:layout_height="30dp"/>
-</LinearLayout>
-
-<dji.ux.widget.ManualFocusWidget
-    android:layout_below="@id/camera"
-    android:layout_alignLeft="@id/camera"
-    android:layout_marginLeft="25dp"
-    android:layout_marginTop="5dp"
-    android:layout_width="42dp"
-    android:layout_height="218dp"
-    tools:ignore="RtlHardcoded"/>
-
-<LinearLayout
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_alignParentBottom="true"
-    android:orientation="horizontal"
-    android:padding="12dp">
-
- <dji.ux.widget.dashboard.DashboardWidget
-     android:id="@+id/Compass"
-     android:layout_width="405dp"
-     android:layout_height="91dp"
-     android:layout_marginRight="12dp"
-     tools:ignore="RtlHardcoded"/>
-
-</LinearLayout>
-
-<dji.ux.widget.controls.CameraControlsWidget
-    android:id="@+id/CameraCapturePanel"
-    android:layout_alignParentRight="true"
-    android:layout_below="@id/camera"
-    android:layout_width="50dp"
-    android:layout_height="213dp"
-    tools:ignore="RtlHardcoded"/>
-
-
-<dji.ux.panel.CameraSettingExposurePanel
-    android:layout_width="180dp"
-    android:layout_below="@id/camera"
-    android:layout_toLeftOf="@+id/CameraCapturePanel"
-    android:background="@color/transparent"
-    android:gravity="center"
-    android:layout_height="263dp"
-    android:visibility="invisible"
-    tools:ignore="RtlHardcoded"/>
-
-<dji.ux.panel.CameraSettingAdvancedPanel
-    android:layout_width="180dp"
-    android:layout_height="263dp"
-    android:layout_below="@id/camera"
-    android:layout_toLeftOf="@+id/CameraCapturePanel"
-    android:background="@color/transparent"
-    android:gravity="center"
-    android:visibility="invisible"
-    tools:ignore="RtlHardcoded"/>
-
-</RelativeLayout>
-```
-In the xml file, we created each widget to access the DJI UXSDK widget elements for the app to use. More widgets can be found on the DJI UXSDK documentation page. Most importantly, we add the following elements for the most important features of the app.
-1. `<dji.ux.widget.FPVWidget/>` allows the application to see the FPV of the camera from the drone. Normally this would be done with a textureView however the UX widget allows us to skip that step.
-2. `<dji.ux.widget.controls.CameraControlsWidget/>` allows the application to take a picture or record a video.
-3. Everything added to `<LinearLayout android:id="@+id/camera"/>` allows the camera to work, including but not limited to storing pictures, automatically focusing, and adjusting light exposure. 
-
-### 4. Implementing the ConnectionActivity Class
-To improve the user experience, we had better create an activity to show the connection status between the DJI Product and the SDK, once it's connected, the user can press the OPEN button to enter the MainActivity.
-
-In the project navigator, go to app -> java -> com -> riis -> fpv, and right-click on the fpv directory. Select New -> Kotlin Class/File to create a new kotlin class and name it as ConnectionActivity.kt.
-
-Next, replace the code of the ConnectionActivity.kt file with the following:
+Next, replace the code of the `MainViewModel.kt` file with the following:
 ```kotlin
-package com.riis.cameraapp
+package com.riis.cameraapp.main
 
-import android.Manifest
-import android.content.Intent
-import androidx.appcompat.app.AppCompatActivity
-import android.os.Bundle
-import android.widget.Button
-import android.widget.TextView
-import androidx.activity.viewModels
-import androidx.core.app.ActivityCompat
-import androidx.lifecycle.Observer
-import com.riis.cameraapp.R
-import dji.sdk.sdkmanager.DJISDKManager
+import android.app.Activity
+import android.content.Context
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.asLiveData
+import androidx.lifecycle.viewModelScope
+import com.riis.cameraapp.models.DJIResourceManager
+import dji.common.error.DJIError
+import dji.common.useraccount.UserAccountState
+import dji.common.util.CommonCallbacks
+import dji.sdk.products.Aircraft
+import dji.sdk.useraccount.UserAccountManager
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.launch
 
-/*
-This activity manages SDK registration and establishing a connection between the
-DJI product and the user's mobile phone.
- */
-class ConnectionActivity : AppCompatActivity() {
+@OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
+class MainViewModel : ViewModel() {
+    val notifyStatusChanged = DJIResourceManager.instance.connectionStatus.asLiveData()
+    val progressToVideo = MutableLiveData(false)
+    val promptLogin = MutableLiveData(false)
 
-    //Class Variables
-    private lateinit var mTextConnectionStatus: TextView
-    private lateinit var mTextProduct: TextView
-    private lateinit var mTextModelAvailable: TextView
-    private lateinit var mBtnOpen: Button
-    private lateinit var mVersionTv: TextView
+    var product: Aircraft? = null
+        get() {
+            field = DJIResourceManager.instance.aircraft
 
-    private val model: ConnectionViewModel by viewModels() //linking the activity to a viewModel
+            return field
+        }
+        private set
 
-    companion object {
-        const val TAG = "ConnectionActivity"
+    fun openVideoFragment() {
+        progressToVideo.value = true
     }
 
-    //Creating the Activity
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        //inflating the activity_connection.xml layout as the activity's view
-        setContentView(R.layout.activity_connection)
-
-        /*
-        Request the following permissions defined in the AndroidManifest.
-        1 is the integer constant we chose to use when requesting app permissions
-        */
-        ActivityCompat.requestPermissions(this,
-            arrayOf(
-                Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                Manifest.permission.VIBRATE,
-                Manifest.permission.INTERNET,
-                Manifest.permission.ACCESS_WIFI_STATE,
-                Manifest.permission.WAKE_LOCK,
-                Manifest.permission.ACCESS_COARSE_LOCATION,
-                Manifest.permission.ACCESS_NETWORK_STATE,
-                Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.CHANGE_WIFI_STATE,
-                Manifest.permission.MOUNT_UNMOUNT_FILESYSTEMS,
-                Manifest.permission.READ_EXTERNAL_STORAGE,
-                Manifest.permission.SYSTEM_ALERT_WINDOW,
-                Manifest.permission.READ_PHONE_STATE
-            ), 1)
-
-        //Initialize the UI, register the app with DJI's mobile SDK, and set up the observers
-        initUI()
-        model.registerApp()
-        observers()
-    }
-
-    //Function to initialize the activity's UI
-    private fun initUI() {
-
-        //referencing the layout views using their resource ids
-        mTextConnectionStatus = findViewById(R.id.text_connection_status)
-        mTextModelAvailable = findViewById(R.id.text_model_available)
-        mTextProduct = findViewById(R.id.text_product_info)
-        mBtnOpen = findViewById(R.id.btn_open)
-        mVersionTv = findViewById(R.id.textView2)
-
-        //Getting the DJI SDK version and displaying it on mVersionTv TextView
-        mVersionTv.text = resources.getString(R.string.sdk_version, DJISDKManager.getInstance().sdkVersion)
-
-        mBtnOpen.isEnabled = false //mBtnOpen Button is initially disabled
-
-        //If mBtnOpen Button is clicked on, start MainActivity (only works when button is enabled)
-        mBtnOpen.setOnClickListener {
-            val intent = Intent(this, MainActivity::class.java)
-            startActivity(intent)
+    fun registerDJI(activity: Activity) {
+        viewModelScope.launch {
+            DJIResourceManager.instance.registerApp(activity)
         }
     }
 
-    //Function to setup observers
-    private fun observers() {
-        //observer listens to changes to the connectionStatus variable stored in the viewModel
-        model.connectionStatus.observe(this, Observer<Boolean> { isConnected ->
-            //If boolean is True, enable mBtnOpen button. If false, disable the button.
-            if (isConnected) {
-                mTextConnectionStatus.text = "Status: Connected"
-                mBtnOpen.isEnabled = true
-            }
-            else {
-                mTextConnectionStatus.text = "Status: Disconnected"
-                mBtnOpen.isEnabled = false
-            }
-        })
+    fun loginDJIUserAccount(context: Context) {
+        UserAccountManager.getInstance().logIntoDJIUserAccount(context,
+            object : CommonCallbacks.CompletionCallbackWith<UserAccountState> {
+                override fun onSuccess(userAccountState: UserAccountState) {
+//                    showToast("login success! Account state is:" + userAccountState.name)
+                }
 
-        /*
-        Observer listens to changes to the product variable stored in the viewModel.
-        product is a BaseProduct object and represents the DJI product connected to the mobile device
-        */
-        model.product.observe(this, Observer { baseProduct ->
-            //if baseProduct is connected to the mobile device, display its firmware version and model name.
-            if (baseProduct != null && baseProduct.isConnected) {
-                mTextModelAvailable.text = baseProduct.firmwarePackageVersion
-
-                //name of the aircraft attached to the remote controller
-                mTextProduct.text = baseProduct.model.displayName
-            }
-        })
+                override fun onFailure(error: DJIError) {
+//                    showToast(error.description)
+                }
+            })
     }
 }
 ```
-In the code shown above, we implement the following:
+The class starts by importing several necessary Android classes, as well as some classes from the app's package. It also uses some experimental features from the Kotlin coroutines library.
 
-1. Create the layout UI elements variables, including four TextViews `mTextConnectionStatus`, `mTextProduct`, `mTextModelAvailable`, `mVersionTv` and one Button `mBtnOpen`.
+The class has three MutableLiveData properties, "notifyStatusChanged," "progressToVideo," and "promptLogin." These are used to hold data that can be observed and updates to the UI. "notifyStatusChanged" holds the connection status of the DJI SDK, "progressToVideo" is used to determine whether or not the app should navigate to the video fragment, and "promptLogin" is used to determine whether or not the app should prompt the user to log in to their DJI account.
 
-2. Link the activity to a ViewModel that stores the connection state and DJI SDK functions
+The class also has a property called "product" which is an aircraft object, it's used to get the aircraft object from the DJI SDK.
 
-3. In the `onCreate()` method, we request all the neccessary permissions for this application to work using the `ActivityCompat.requestPermissions()` method. We then invoke the `initUI()` method to initialize the four TextViews and the Button. We also setup the observers for this activity using the `observers()` method.
+The class has three methods: "openVideoFragment," "registerDJI," and "loginDJIUserAccount." "openVideoFragment" sets the "progressToVideo" property to true which triggers the navigation to the video fragment. "registerDJI" method is used to register the app with the DJI SDK, it's using a coroutine to do that in a background thread. And "loginDJIUserAccount" is used to log the user into their DJI account, it's using a callback to get the result of the login process.
 
-4. In the `initUI()` method, The `mBtnOpen` button is initially diabled. We invoke the `setOnClickListener()` method of `mBtnOpen` and set the Button's click action to start the MainActivity (only works when button is enabled). The `mVersionTv` TextView is set to display the DJI SDK version.
+And this is the main functionality of the MainViewModel class, it's handling the app's data and business logic like observing the connection status of the DJI SDK, navigating to the video fragment, and logging the user into their DJI account.
 
-5. In the `observers()` method, we are observing changes (from the ViewModel) to the connection state between app and the DJI product as well as any changes to the product itself. Based on this, the `mTextConnectionStatus` will display the connection status, `mTextProduct` will the display the product's name, and `mTextModelAvailable` will display the DJI product's firmware version. If a DJI product is connected, the `mBtnOpen` Button becomes enabled.
+---
+
+In the project navigator, go to app -> java -> com -> riis -> cameraapp, and right-click on the cameraapp directory. Select New -> Package to create a new package and name it as `models` so that the structure looks like `com.riis.cameraapp.models`.
+
+#### ServiceConnectionEvent.kt
+In the project navigator, go to app -> java -> com -> riis -> cameraapp -> models, and right-click on the models directory. Select New -> Package to create a new package and name it as `eventbus` so that the structure looks like `com.riis.cameraapp.models.eventbus`.
+
+Next in the project navigator, go to app -> java -> com -> riis -> cameraapp -> models -> eventbus, and right-click on the eventbus directory. Select New -> Kotlin Class/File to create a new Kotlin Class and name it as `ServiceConnectionEvent`.
+
+Next, replace the code of the `ServiceConnectionEvent.kt` file with the following:
+```kotlin
+package com.riis.cameraapp.models.eventbus
+
+class ServiceConnectionEvent(val connected: Boolean)
+```
 
 ### 5. Implementing the ConnectionActivity Layout
 Open the `activity_connection.xml` layout file and replace the code with the following:
