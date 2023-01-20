@@ -41,7 +41,7 @@
 
         <meta-data
             android:name="com.dji.sdk.API_KEY"
-            android:value="87ccc4b5fc650e8c9dcd9caf" />
+            android:value="${DJI_API_KEY}" />
 
         <service android:name="dji.sdk.sdkmanager.DJIGlobalService" />
 
@@ -53,7 +53,7 @@
         <activity
             android:name=".MainActivity"
             android:launchMode="singleTop"
-            android:screenOrientation="landscape"
+            android:screenOrientation="reverseLandscape"
             tools:ignore="LockedOrientationActivity">
 
             <intent-filter>

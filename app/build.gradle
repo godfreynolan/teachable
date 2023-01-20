@@ -18,12 +18,13 @@ android {
     }
 
     defaultConfig {
-        manifestPlaceholders = [DJI_API_KEY: djiKey]
         applicationId 'com.riis.cameraapp'
         minSdkVersion 21
         targetSdkVersion 30
         versionCode 1
         multiDexEnabled true
+        manifestPlaceholders = [DJI_API_KEY: djiKey]
+        buildConfigField "String", "TWITCH_KEY", properties['TWITCH_KEY']
         versionName "1.0"
         ndk {
             // On x86 devices that run Android API 23 or above, if the application is targeted with API 23 or

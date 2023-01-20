@@ -12,6 +12,7 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import com.riis.cameraapp.BuildConfig
 import com.riis.cameraapp.databinding.VideoFragmentBinding
 import com.riis.cameraapp.models.eventbus.ServiceConnectionEvent
 import com.riis.cameraapp.service.StreamService
@@ -126,9 +127,9 @@ class VideoFragment : Fragment() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        // Broadcasts to tkocikRIIS twitch (twitch.tv/tkocikriis)
+        // Broadcasts to appriis twitch (twitch.tv/appriis)
         streamService?.onStreamingActivityResult(
-            "rtmp://live.twitch.tv/app/live_533674013_cuGlQm9aTwNKkrsWnAJ8JHQ8JQZBUV",
+            "rtmp://live.twitch.tv/app/" + BuildConfig.TWITCH_KEY,
             requireActivity().windowManager.defaultDisplay,
             requestCode,
             resultCode,
