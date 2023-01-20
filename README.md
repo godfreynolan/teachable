@@ -612,6 +612,664 @@ package com.riis.cameraapp.models.eventbus
 class ServiceConnectionEvent(val connected: Boolean)
 ```
 
+#### DJIResourceManager.kt
+Next in the project navigator, go to app -> java -> com -> riis -> cameraapp -> models, and right-click on the models directory. Select New -> Kotlin Class/File to create a new Kotlin Class and name it as `DJIResourceManager`.
+
+Next, replace the code of the `DJIResourceManager.kt` file with the following:
+```kotlin
+package com.riis.cameraapp.models
+
+import android.content.Context
+import dji.common.error.DJIError
+import dji.common.error.DJISDKError
+import dji.sdk.base.BaseComponent
+import dji.sdk.base.BaseProduct
+import dji.sdk.flightcontroller.FlightController
+import dji.sdk.products.Aircraft
+import dji.sdk.sdkmanager.DJISDKInitEvent
+import dji.sdk.sdkmanager.DJISDKManager
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.channels.ConflatedBroadcastChannel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
+
+@ExperimentalCoroutinesApi
+@FlowPreview
+class DJIResourceManager {
+    private object HOLDER {
+        val INSTANCE = DJIResourceManager()
+    }
+
+    companion object {
+        val instance: DJIResourceManager by lazy { HOLDER.INSTANCE }
+    }
+
+    var flightController: FlightController? = null
+    var aircraft: Aircraft? = null
+
+    private var _connectionStatus = ConflatedBroadcastChannel(false)
+    val connectionStatus: Flow<Boolean> = _connectionStatus.asFlow()
+
+    private var isRegistrationInProgress = false;
+
+    suspend fun registerApp(context: Context?): Boolean {
+        if (isRegistrationInProgress) {
+            return false
+        }
+
+        isRegistrationInProgress = true
+
+        return suspendCoroutine { continuation ->
+            DJISDKManager.getInstance()
+                .registerApp(context, object : DJISDKManager.SDKManagerCallback {
+                    override fun onDatabaseDownloadProgress(p0: Long, p1: Long) {}
+
+                    override fun onInitProcess(p0: DJISDKInitEvent?, p1: Int) {
+
+                    }
+
+                    override fun onComponentChange(
+                        componentKey: BaseProduct.ComponentKey?,
+                        old: BaseComponent?,
+                        new: BaseComponent?
+                    ) {
+
+                    }
+
+                    override fun onProductDisconnect() {
+                        resetDefaultValues()
+                    }
+
+                    override fun onProductConnect(product: BaseProduct?) {
+                        product?.let {
+                            try {
+                                aircraft = (it as Aircraft)
+                                flightController = it.flightController
+                                _connectionStatus.offer(true)
+                                setupCallbacks()
+                            } catch (ex: Exception) {
+                                flightController = null
+                            }
+                        }
+                    }
+
+                    override fun onProductChanged(p0: BaseProduct?) {
+
+                    }
+
+                    override fun onRegister(error: DJIError?) {
+                        error?.let {
+                            if (it == DJISDKError.REGISTRATION_SUCCESS) {
+                                DJISDKManager.getInstance().startConnectionToProduct()
+                                continuation.resume(true)
+                            } else {
+                                continuation.resume(false)
+                            }
+
+                            isRegistrationInProgress = false
+                        }
+                    }
+                })
+        }
+    }
+
+    private fun resetDefaultValues() {
+        flightController = null
+        _connectionStatus.offer(false)
+    }
+
+    private fun setupCallbacks() {
+        initDroneStateCallback()
+        initRCLocationCallback()
+        initDroneBatteryCallback()
+        initRCBatteryCallback()
+    }
+
+    private fun initDroneStateCallback() {
+        flightController?.setStateCallback { state ->
+        }
+    }
+
+    private fun initRCLocationCallback() {
+        aircraft?.remoteController?.setGPSDataCallback { data ->
+        }
+    }
+
+    private fun initDroneBatteryCallback() {
+        aircraft?.battery?.setStateCallback { state ->
+        }
+    }
+
+    private fun initRCBatteryCallback() {
+        aircraft?.remoteController?.setChargeRemainingCallback { charge ->
+        }
+    }
+}
+```
+
+#### RTMPCallback.kt
+Next in the project navigator, go to app -> java -> com -> riis -> cameraapp -> models, and right-click on the models directory. Select New -> Kotlin Class/File to create a new Kotlin Class and name it as `RTMPCallback`.
+
+Next, replace the code of the `RTMPCallback.kt` file with the following:
+```kotlin
+package com.riis.cameraapp.models
+
+import android.content.Context
+import android.widget.Toast
+import com.pedro.rtmp.utils.ConnectCheckerRtmp
+
+class RTMPCallback(private val context: Context) : ConnectCheckerRtmp {
+    override fun onAuthSuccessRtmp() {
+        // We don't care?
+    }
+
+    override fun onNewBitrateRtmp(bitrate: Long) {
+        // We don't care?
+    }
+
+    override fun onConnectionSuccessRtmp() {
+        // We don't care?
+    }
+
+    override fun onConnectionFailedRtmp(reason: String) {
+        Toast.makeText(context, reason, Toast.LENGTH_SHORT).show()
+    }
+
+    override fun onConnectionStartedRtmp(rtmpUrl: String) {
+        Toast.makeText(context, "RTMP Connection Started", Toast.LENGTH_SHORT).show()
+    }
+
+    override fun onAuthErrorRtmp() {
+        Toast.makeText(context, "RTMP Authorization Error", Toast.LENGTH_SHORT).show()
+    }
+
+    override fun onDisconnectRtmp() {
+        Toast.makeText(context, "Stream disconnected", Toast.LENGTH_SHORT).show()
+    }
+}
+```
+
+This is Kotlin code for `RTMPCallback.kt` which handless the callbacks related to the RTMP connection in the app.
+
+The class starts by importing necessary classes from the Android SDK and a class called "ConnectCheckerRtmp" which is a class from a third-party library used to handle the RTMP connection.
+
+The class is implemented as a wrapper of "ConnectCheckerRtmp" interface which has several callback methods: "onAuthSuccessRtmp," "onNewBitrateRtmp," "onConnectionSuccessRtmp," "onConnectionFailedRtmp," "onConnectionStartedRtmp," "onAuthErrorRtmp," and "onDisconnectRtmp."
+
+The "RTMPCallback" class constructor takes a parameter "context" of the type Context.
+
+All the callback methods are overridden in the class. In all the methods, it is showing a Toast message to the user to notify the user about the current status of the RTMP connection. For example, in the "onConnectionFailedRtmp" method, it is showing a Toast message with the reason why the connection failed. Similarly, in the "onAuthErrorRtmp" method, it is showing a Toast message with the message "RTMP Authorization Error" to the user.
+
+The Toast message is used to show a quick message to the user on the screen, in this case, it's used to notify the user about the status of the RTMP connection.
+
+#### RTPProvider.kt
+Next in the project navigator, go to app -> java -> com -> riis -> cameraapp -> models, and right-click on the models directory. Select New -> Kotlin Class/File to create a new Kotlin Class and name it as `RTPProvider`.
+
+Next, replace the code of the `RTPProvider.kt` file with the following:
+```kotlin
+package com.riis.cameraapp.models
+
+import android.app.Activity
+import android.content.Intent
+import android.util.DisplayMetrics
+import android.util.Log
+import android.view.Display
+import androidx.fragment.app.Fragment
+import com.pedro.rtplibrary.base.DisplayBase
+
+class RTPProvider(
+    private val streamCamera: DisplayBase
+) {
+    private val requestCodeScreenProjector = 179
+
+    fun onStreamingActivityResult(
+        destination: String,
+        display: Display,
+        requestCode: Int,
+        resultCode: Int,
+        data: Intent?
+    ) {
+        if (requestCode != requestCodeScreenProjector || resultCode != Activity.RESULT_OK) {
+            return
+        }
+
+        streamCamera.setIntentResult(Activity.RESULT_OK, data)
+
+        val displayMetrics = DisplayMetrics()
+        display.getRealMetrics(displayMetrics)
+        val width = displayMetrics.widthPixels
+        val height = displayMetrics.heightPixels
+
+        if (streamCamera.prepareAudio() && streamCamera.prepareVideo(
+                width,
+                height,
+                30,
+                1200 * 1024,
+                0,
+                displayMetrics.densityDpi
+            )
+        ) {
+            streamCamera.startStream(destination)
+        } else {
+            /*This device cant init encoders, this could be for 2 reasons: The encoder selected
+                 * doesn't support any configuration setted or your device hasn't a H264 or AAC encoder
+                 * (in this case you can see log error valid encoder not found)
+                 * */
+            Log.e("STREAM", "Could not start stream")
+        }
+    }
+
+    fun stopStreaming() {
+        if (streamCamera.isStreaming) {
+            streamCamera.stopStream()
+        }
+    }
+
+    fun toggleStreaming(fragment: Fragment) {
+        if (streamCamera.isStreaming) {
+            streamCamera.stopStream()
+        } else {
+            fragment.startActivityForResult(streamCamera.sendIntent(), requestCodeScreenProjector)
+        }
+    }
+}
+```
+
+This is a Kotlin code for a class called "RTPProvider" which handles the RTMP streaming in the app.
+
+The class starts by importing necessary classes from the Android SDK and a class called "DisplayBase" which is a class from a third-party library used to handle the RTMP streaming.
+
+The class has a constructor which takes an instance of "DisplayBase" as a parameter.
+
+The class has 3 methods:
+
+    onStreamingActivityResult: it is used to handle the result of the activity started for RTMP streaming. It is checking if the request code and result code are correct and then it's calling setIntentResult and prepareAudio and prepareVideo methods on streamCamera object. If the preparation was successful, it starts the stream by calling startStream method on streamCamera object.
+    stopStreaming: it is used to stop the RTMP streaming. It's checking if the streamCamera is streaming, if it's true then it stops the stream by calling the stopStream method on streamCamera object.
+    toggleStreaming: it is used to toggle the RTMP streaming. It's checking if the streamCamera is streaming, if it's true then it stops the stream by calling the stopStream method on streamCamera object. If it's not streaming, it starts the activity for RTMP streaming by calling the startActivityForResult method on the fragment object and passing the intent returned by the sendIntent method on streamCamera object.
+
+#### StreamBinder.kt
+
+In the project navigator, go to app -> java -> com -> riis -> cameraapp, and right-click on the cameraapp directory. Select New -> Package to create a new package and name it as `service` so that the structure looks like `com.riis.cameraapp.service`.
+
+Next in the project navigator, go to app -> java -> com -> riis -> cameraapp -> service, and right-click on the service directory. Select New -> Kotlin Class/File to create a new Kotlin Class and name it as `StreamBinder`.
+
+Next, replace the code of the `StreamBinder.kt` file with the following:
+```kotlin
+package com.riis.cameraapp.service
+
+import android.os.Binder
+
+class StreamBinder(private val service: StreamService): Binder() {
+    fun getService(): StreamService {
+        return service
+    }
+}
+```
+
+#### StreamService.kt
+Next in the project navigator, go to app -> java -> com -> riis -> cameraapp -> service, and right-click on the service directory. Select New -> Kotlin Class/File to create a new Kotlin Class and name it as `StreamService`.
+
+Next, replace the code of the `StreamService.kt` file with the following:
+```kotlin
+package com.riis.cameraapp.service
+
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.Service
+import android.content.Context
+import android.content.Intent
+import android.os.Build
+import android.os.IBinder
+import android.view.Display
+import androidx.core.app.NotificationCompat
+import androidx.fragment.app.Fragment
+import com.pedro.rtplibrary.rtmp.RtmpDisplay
+import com.riis.cameraapp.models.RTMPCallback
+import com.riis.cameraapp.models.RTPProvider
+
+class StreamService : Service() {
+    private lateinit var rtpProvider: RTPProvider
+    private val streamBinder = StreamBinder(this)
+
+    private val channelId = "rtpDisplayStreamChannel"
+
+    private lateinit var notificationManager: NotificationManager
+
+    override fun onBind(intent: Intent?): IBinder {
+        return streamBinder
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+
+        rtpProvider = RTPProvider(RtmpDisplay(this, true, RTMPCallback(this)))
+
+        notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel =
+                NotificationChannel(channelId, channelId, NotificationManager.IMPORTANCE_HIGH)
+            notificationManager.createNotificationChannel(channel)
+        }
+        keepAliveTrick()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        rtpProvider.stopStreaming()
+        stopForeground(true)
+    }
+
+    private fun keepAliveTrick() {
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.O) {
+            val notification = NotificationCompat.Builder(this, channelId)
+                .setOngoing(true)
+                .setContentTitle("")
+                .setContentText("").build()
+            startForeground(1, notification)
+        } else {
+            startForeground(1, Notification())
+        }
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        return START_STICKY
+    }
+
+    fun onStreamingActivityResult(
+        destination: String,
+        display: Display,
+        requestCode: Int,
+        resultCode: Int,
+        data: Intent?
+    ) {
+        rtpProvider.onStreamingActivityResult(
+            destination,
+            display,
+            requestCode,
+            resultCode,
+            data
+        )
+    }
+
+    fun stopStreaming() {
+        rtpProvider.stopStreaming()
+    }
+
+    fun toggleStreaming(fragment: Fragment) {
+        rtpProvider.toggleStreaming(fragment)
+    }
+}
+```
+
+This code is for an Android service called StreamService. A service is a background task that runs independently of the main app, and it can run even when the app is not in the foreground. This StreamService is used to stream video from the camera app to a remote server using RTMP protocol.
+
+The service is implemented by extending the Android Service class and overriding some of its methods. The onCreate method is called when the service is first created and it initializes the RTPProvider and a NotificationManager, which is used to create a notification channel for the service. The onStartCommand method is called when the service is started and it returns a flag to start the service in a "sticky" mode, which means that it will be restarted if it is stopped by the system.
+
+The service also has a keepAliveTrick method, which is used to make sure that the service continues running even if the app is not in the foreground. It creates a notification with no content that keeps the service alive and running.
+
+The onStreamingActivityResult, stopStreaming, and toggleStreaming methods are used to control the streaming process. The onStreamingActivityResult method is used to handle the result of the activity that starts when the user wants to start streaming. The stopStreaming method stops the streaming process and the toggleStreaming method starts or stops the streaming process depending on the current state of the streaming.
+
+The service also has a StreamBinder inner class that is used to bind the service to the activity, which allows the activity to access the service's methods.
+
+#### StreamServiceConnection.kt
+
+Next in the project navigator, go to app -> java -> com -> riis -> cameraapp -> service, and right-click on the service directory. Select New -> Kotlin Class/File to create a new Kotlin Class and name it as `StreamServiceConnection`.
+
+Next, replace the code of the `StreamServiceConnection.kt` file with the following:
+```kotlin
+package com.riis.cameraapp.service
+
+import android.content.ComponentName
+import android.content.ServiceConnection
+import android.os.IBinder
+import com.riis.cameraapp.models.eventbus.ServiceConnectionEvent
+import org.greenrobot.eventbus.EventBus
+
+class StreamServiceConnection : ServiceConnection {
+    var isBound = false
+    var service: StreamService? = null
+        private set
+
+    override fun onServiceDisconnected(name: ComponentName?) {
+        service = null
+        EventBus.getDefault().post(ServiceConnectionEvent(false))
+    }
+
+    override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+        val binder = service as StreamBinder
+        this.service = binder.getService()
+        EventBus.getDefault().post(ServiceConnectionEvent(true))
+    }
+}
+```
+
+#### VideoFragment.kt
+
+In the project navigator, go to app -> java -> com -> riis -> cameraapp, and right-click on the cameraapp directory. Select New -> Package to create a new package and name it as `video` so that the structure looks like `com.riis.cameraapp.video`.
+
+Next in the project navigator, go to app -> java -> com -> riis -> cameraapp -> video, and right-click on the service directory. Select New -> Kotlin Class/File to create a new Kotlin Class and name it as `VideoFragment.kt`.
+
+Next, replace the code of the `VideoFragment.kt` file with the following:
+```kotlin
+package com.riis.cameraapp.video
+
+import android.content.Context
+import android.content.Intent
+import android.graphics.SurfaceTexture
+import android.os.Bundle
+import android.util.Log
+import android.view.LayoutInflater
+import android.view.TextureView
+import android.view.View
+import android.view.ViewGroup
+import android.widget.Toast
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import com.riis.cameraapp.BuildConfig
+import com.riis.cameraapp.databinding.VideoFragmentBinding
+import com.riis.cameraapp.models.eventbus.ServiceConnectionEvent
+import com.riis.cameraapp.service.StreamService
+import com.riis.cameraapp.service.StreamServiceConnection
+import dji.common.product.Model
+import dji.sdk.camera.VideoFeeder
+import dji.sdk.codec.DJICodecManager
+import kotlinx.android.synthetic.main.video_fragment.view.*
+import org.greenrobot.eventbus.EventBus
+import org.greenrobot.eventbus.Subscribe
+import org.greenrobot.eventbus.ThreadMode
+
+class VideoFragment : Fragment() {
+    private val viewModel: VideoViewModel by viewModels()
+
+    private var codecManager: DJICodecManager? = null
+
+    // The callback for receiving the raw H264 video data for camera live view
+    private var mReceivedVideoDataListener =
+        VideoFeeder.VideoDataListener { videoBuffer: ByteArray?, size: Int ->
+            codecManager?.sendDataToDecoder(videoBuffer, size)
+        }
+
+    private val streamServiceConnection = StreamServiceConnection()
+
+    private var streamService: StreamService? = null
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        val binding = VideoFragmentBinding.inflate(inflater, container, false)
+        binding.viewModel = viewModel
+
+        return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        setUpViews(view)
+
+        streamService?.toggleStreaming(this)
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        val product = viewModel.product
+
+        if (product?.isConnected == false) {
+            Toast.makeText(requireActivity(), "Product is null or not connected", Toast.LENGTH_LONG).show()
+        } else if (product?.model != Model.UNKNOWN_AIRCRAFT) {
+            VideoFeeder.getInstance().primaryVideoFeed.addVideoDataListener(
+                mReceivedVideoDataListener
+            )
+        }
+
+        if (streamService != null) {
+            return
+        }
+
+        val intent = Intent(requireActivity(), StreamService::class.java)
+
+        if (!streamServiceConnection.isBound) {
+            val result = requireActivity().bindService(intent, streamServiceConnection, Context.BIND_AUTO_CREATE)
+
+            streamServiceConnection.isBound = result
+            Log.e("STREAM", "Service has been bound: $result")
+        }
+
+        streamService = streamServiceConnection.service
+    }
+
+    override fun onStart() {
+        super.onStart()
+        EventBus.getDefault().register(this)
+    }
+
+    override fun onPause() {
+        if (mReceivedVideoDataListener != null) {
+            VideoFeeder.getInstance().primaryVideoFeed
+                .removeVideoDataListener(mReceivedVideoDataListener)
+        }
+
+        streamService?.stopStreaming()
+        super.onPause()
+    }
+
+    override fun onStop() {
+        EventBus.getDefault().unregister(this)
+
+        if (streamService != null) {
+            if (streamServiceConnection.isBound) {
+                requireActivity().unbindService(streamServiceConnection)
+                streamServiceConnection.isBound = false
+            }
+
+            streamService?.stopSelf()
+            streamService = null
+        }
+
+        super.onStop()
+    }
+
+    override fun onDestroy() {
+        codecManager?.cleanSurface()
+        codecManager?.destroyCodec()
+        super.onDestroy()
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        // Broadcasts to appriis twitch (twitch.tv/appriis)
+        streamService?.onStreamingActivityResult(
+            "rtmp://live.twitch.tv/app/" + BuildConfig.TWITCH_KEY,
+            requireActivity().windowManager.defaultDisplay,
+            requestCode,
+            resultCode,
+            data
+        )
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    fun onServiceConnectionEvent(event: ServiceConnectionEvent) {
+        if (event.connected) {
+            streamService = streamServiceConnection.service
+
+            streamService?.toggleStreaming(this)
+        } else {
+            streamService = null
+        }
+    }
+
+    private fun setUpViews(view: View) {
+        view.video_texture_view.surfaceTextureListener =
+            object : TextureView.SurfaceTextureListener {
+                override fun onSurfaceTextureSizeChanged(
+                    surface: SurfaceTexture,
+                    width: Int,
+                    height: Int
+                ) {
+
+                }
+
+                override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {
+
+                }
+
+                override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
+                    codecManager?.cleanSurface()
+                    return false
+                }
+
+                override fun onSurfaceTextureAvailable(
+                    surface: SurfaceTexture,
+                    width: Int,
+                    height: Int
+                ) {
+                    if (codecManager == null) {
+                        codecManager = DJICodecManager(requireActivity(), surface, width, height)
+                    }
+                }
+            }
+    }
+}
+```
+
+This code is for a fragment called VideoFragment which is used to display live video feed from a DJI drone camera. It is using the DJI SDK to receive the raw H.264 video data for camera live view and display it on the screen.
+
+The fragment sets up views, binds to a StreamService, and receives video data to display. The DJICodecManager is also used to decode the video data and send it to the display. The fragment also uses the EventBus library to listen for events related to the service connection and handle them appropriately.
+
+When the fragment is created, it sets up views and starts the streaming service. When it is resumed, it starts listening for video data and binds to the streaming service. When it is paused, it stops listening for video data and stops the streaming service. When it is stopped, it unregisters from the EventBus and unbinds from the streaming service. Additionally, it uses the keepAliveTrick method to keep the service running in the background.
+
+#### VideoViewModel.kt
+
+Next in the project navigator, go to app -> java -> com -> riis -> cameraapp -> video, and right-click on the service directory. Select New -> Kotlin Class/File to create a new Kotlin Class and name it as `VideoViewModel.kt`.
+
+Next, replace the code of the `VideoViewModel.kt` file with the following:
+```kotlin
+package com.riis.cameraapp.video
+
+import androidx.lifecycle.ViewModel
+import com.riis.cameraapp.models.DJIResourceManager
+import dji.sdk.products.Aircraft
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
+
+@OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
+class VideoViewModel : ViewModel() {
+    var product: Aircraft? = null
+        get() {
+            field = DJIResourceManager.instance.aircraft
+
+            return field
+        }
+        private set
+}
+```
+
 ### 5. Implementing the ConnectionActivity Layout
 Open the `activity_connection.xml` layout file and replace the code with the following:
 ```xml
