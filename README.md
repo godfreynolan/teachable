@@ -48,39 +48,29 @@ Please replace **everything** in the `build.gradle (Project)` with:
 ```kotlin
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 buildscript {
-    // Declare variable to store the kotlin version
     ext.kotlin_version = '1.6.10'
     repositories {
-        // Add Google's Maven repository as a dependency source
         google()
-        // Add Maven Central as a dependency source
         mavenCentral()
     }
     dependencies {
-        // Add Android gradle plugin as a dependency
         classpath 'com.android.tools.build:gradle:7.0.4'
-        // Add Kotlin gradle plugin as a dependency
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-        // Note: Do not place your application dependencies here; they belong in the individual module build.gradle files
+        // NOTE: Do not place your application dependencies here; they belong
+        // in the individual module build.gradle files
     }
 }
 
 allprojects {
     repositories {
-        // Add Google's Maven repository as a dependency source
         google()
-        // Add Jcenter as a dependency source
         jcenter()
-        // Add Maven Central as a dependency source
         mavenCentral()
-        // Add JitPack repository as a dependency source
         maven { url 'https://jitpack.io' }
     }
 }
 
-// create a gradle task that delete the build directory when executed
 task clean(type: Delete) {
-    // delete the root project build directory
     delete rootProject.buildDir
 }
 ```
@@ -109,13 +99,12 @@ android {
     }
 
     defaultConfig {
+        manifestPlaceholders = [DJI_API_KEY: djiKey]
         applicationId 'com.riis.cameraapp'
         minSdkVersion 21
         targetSdkVersion 30
         versionCode 1
         multiDexEnabled true
-        manifestPlaceholders = [DJI_API_KEY: djiKey]
-        buildConfigField "String", "TWITCH_KEY", properties['TWITCH_KEY']
         versionName "1.0"
         ndk {
             // On x86 devices that run Android API 23 or above, if the application is targeted with API 23 or
@@ -1449,13 +1438,8 @@ Note: Permissions must be requested by the application and granted by the user i
 ~~~~
 
 ### 8. Configuring the Resource XMLs
-Once you finish the above steps, let's copy all the images (xml files) from this Github project's drawable folder **(app -> res -> drawable)** to the same folder in your project. Their names can be found below. 
-* round_btn.xml
-* round_btn_disable.xml
-* round_btn_normal.xml
-* rount_btn_pressed.xml
-These images are used in the ConnectionActivity class and must be imported otherwise the project will not build. 
-Moreover, open the `colors.xml` file and update the content as shown below:
+Once you finish the above steps, let's change some of the files in **(app -> res -> values)** to some useful colours and strings. 
+First, open the `colors.xml` file and update the content as shown below:
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
@@ -1475,15 +1459,15 @@ Moreover, open the `colors.xml` file and update the content as shown below:
 ```
 Furthermore, open the `strings.xml` file and replace the content with the following:
 ```xml
-<resources>  
- <string name="app_name">DJIFPV-Kotlin</string>  
- <string name="action_settings">Settings</string>  
- <string name="disconnected">Disconnected</string>  
- <string name="product_information">Product Information</string>  
- <string name="connection_loose">Status: No Product Connected</string>  
- <string name="model_not_available">Model Not Available</string>  
- <string name="push_info">Push Info</string>  
- <string name="sdk_version">DJI SDK Version: %1$s</string>  
+<resources>
+    <string name="app_name">DJIFPV-Kotlin</string>
+    <string name="action_settings">Settings</string>
+    <string name="disconnected">Disconnected</string>
+    <string name="product_information">Product Information</string>
+    <string name="connection_loose">Status: No Product Connected</string>
+    <string name="model_not_available">Model Not Available</string>
+    <string name="push_info">Push Info</string>
+    <string name="sdk_version">DJI SDK Version: %1$s</string>
 </resources>
 ```
 Lastly, create `styles.xml` and replace the content with the following:
@@ -1497,6 +1481,9 @@ Lastly, create `styles.xml` and replace the content with the following:
         <item name="android:shadowRadius">6</item>
         <item name="android:textSize">17sp</item>
         <item name="android:textColor">@color/white</item>
+    </style>
+
+    <style name="AppTheme" parent="@style/Theme.AppCompat.DayNight.NoActionBar">
     </style>
 </resources>
 ```
