@@ -45,6 +45,14 @@
             android:background="@color/dark_gray"
             android:orientation="horizontal">
 
+            <dji.ux.widget.PreFlightStatusWidget
+                android:layout_width="238dp"
+                android:layout_height="25dp"/>
+
+            <dji.ux.widget.FlightModeWidget
+                android:layout_width="103dp"
+                android:layout_height="22dp"/>
+
             <dji.ux.widget.GPSSignalWidget
                 android:layout_width="44dp"
                 android:layout_height="22dp"/>
@@ -149,6 +157,25 @@
 
         </LinearLayout>
 
+        <!--Take off and return home buttons on left -->
+        <LinearLayout
+            android:layout_width="40dp"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_marginStart="12dp"
+            android:orientation="vertical">
+
+            <dji.ux.widget.TakeOffWidget
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginBottom="12dp"/>
+
+            <dji.ux.widget.ReturnHomeWidget
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginTop="12dp"/>
+        </LinearLayout>
+
         <dji.ux.widget.controls.CameraControlsWidget
             android:id="@+id/CameraCapturePanel"
             android:layout_alignParentRight="true"
@@ -178,5 +205,12 @@
             android:visibility="invisible"
             tools:ignore="RtlHardcoded"/>
 
+        <!-- Pre-flight checklist panel -->
+        <dji.ux.panel.PreFlightCheckListPanel
+            android:layout_width="400dp"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/signal"
+            custom:excludeItem="ESCStatus"
+            android:visibility="gone"/>
     </RelativeLayout>
 </layout>
