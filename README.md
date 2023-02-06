@@ -247,7 +247,7 @@ TWITCH_KEY="<insert api key here>"
 
 ### Building the Layouts of Activity
 ### 1. Creating the MApplication Class
-In the project file navigator, go to app -> java -> com -> riis -> fpv, and right-click on the fpv directory. Select New -> Kotlin Class to create a new kotlin class and name it as MApplication.kt.
+In the project file navigator, go to app -> java -> com -> riis -> cameraapp, and right-click on the cameraapp directory. Select New -> Kotlin Class to create a new kotlin class and name it as MApplication.kt.
 
 Then, open the MApplication.kt file and replace the content with the following:
 ```kotlin
