@@ -357,12 +357,13 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Observer
 import androidx.navigation.findNavController
 import com.riis.cameraapp.R
-import com.riis.cameraapp.databinding.MainFragmentBinding
+import com.riis.cameraapp.databinding.FragmentMainBinding
 import dji.keysdk.KeyManager
 import dji.keysdk.ProductKey
-import kotlinx.android.synthetic.main.main_fragment.view.*
+import kotlinx.android.synthetic.main.fragment_main.view.*
 
 class MainFragment : Fragment() {
     private val missingPermissions = ArrayList<String>()
@@ -391,7 +392,7 @@ class MainFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        val binding = MainFragmentBinding.inflate(inflater, container, false)
+        val binding = FragmentMainBinding.inflate(inflater, container, false)
         binding.viewModel = viewModel
 
         return binding.root
@@ -450,18 +451,18 @@ class MainFragment : Fragment() {
     }
 
     private fun setUpLiveData() {
-        viewModel.notifyStatusChanged.observe(viewLifecycleOwner, androidx.lifecycle.Observer {
+        viewModel.notifyStatusChanged.observe(viewLifecycleOwner, Observer {
             refreshSDKRelativeUI()
         })
 
-        viewModel.progressToVideo.observe(viewLifecycleOwner, androidx.lifecycle.Observer {
+        viewModel.progressToVideo.observe(viewLifecycleOwner, Observer {
             if (it) {
                 requireView().findNavController().navigate(R.id.action_main_to_video)
                 viewModel.progressToVideo.value = false
             }
         })
 
-        viewModel.promptLogin.observe(viewLifecycleOwner, androidx.lifecycle.Observer {
+        viewModel.promptLogin.observe(viewLifecycleOwner, Observer {
             if (it) {
                 viewModel.loginDJIUserAccount(requireContext())
                 viewModel.promptLogin.value = false
@@ -1057,14 +1058,14 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import com.riis.cameraapp.BuildConfig
-import com.riis.cameraapp.databinding.VideoFragmentBinding
+import com.riis.cameraapp.databinding.FragmentVideoBinding
 import com.riis.cameraapp.models.eventbus.ServiceConnectionEvent
 import com.riis.cameraapp.service.StreamService
 import com.riis.cameraapp.service.StreamServiceConnection
 import dji.common.product.Model
 import dji.sdk.camera.VideoFeeder
 import dji.sdk.codec.DJICodecManager
-import kotlinx.android.synthetic.main.video_fragment.view.*
+import kotlinx.android.synthetic.main.fragment_video.view.*
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
@@ -1089,7 +1090,7 @@ class VideoFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        val binding = VideoFragmentBinding.inflate(inflater, container, false)
+        val binding = FragmentVideoBinding.inflate(inflater, container, false)
         binding.viewModel = viewModel
 
         return binding.root
@@ -1259,7 +1260,7 @@ class VideoViewModel : ViewModel() {
 ```
 
 ### 5. Implementing the Layouts
-Next, we create **res->layout->main_fragment and add the following xml code, replacing the old xml with it. 
+Next, we create **res->layout->fragment_main and add the following xml code, replacing the old xml with it. 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
 <layout>
@@ -1326,189 +1327,69 @@ Next, we create **res->layout->main_fragment and add the following xml code, rep
 ```
 We are creating the new connection screen within this file, broviding a button "open_button" to connect to the drone. **TextView**s are added to give more information of the drone and the twitch connection. 
 
-Finally, we create **res->layout->video_fragment.xml** and replace the old xml with the following.
+Finally, we create **res->layout->fragment_video.xml** and replace the old xml with the following.
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
-<layout xmlns:custom="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools">
+<layout>
 
     <data>
 
         <variable
             name="viewModel"
-            type="com.riis.cameraapp.video.VideoViewModel" />
+            type="com.riis.cameraapp.main.MainViewModel" />
     </data>
 
-    <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="horizontal"
-        tools:context=".MainActivity">
+        android:layout_margin="15dp"
+        android:orientation="vertical">
 
-        <!-- Widget to see first person view (FPV) -->
-        <RelativeLayout
-            android:id="@+id/fpv_container"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:gravity="center">
-            <dji.ux.widget.FPVWidget
-                custom:sourceCameraNameVisibility="false"
-                android:id="@+id/video_texture_view"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_gravity="center"
-                android:layout_marginBottom="-2dp"/>
-        </RelativeLayout>
-
-        <dji.ux.widget.FPVOverlayWidget
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"/>
-
-        <dji.ux.workflow.CompassCalibratingWorkFlow
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"/>
-        <!-- Widgets in top status bar -->
-        <LinearLayout
-            android:id="@+id/signal"
-            android:layout_width="match_parent"
-            android:layout_height="25dp"
-            android:background="@color/dark_gray"
-            android:orientation="horizontal">
-
-            <dji.ux.widget.GPSSignalWidget
-                android:layout_width="44dp"
-                android:layout_height="22dp"/>
-
-            <dji.ux.widget.VisionWidget
-                android:layout_width="22dp"
-                android:layout_height="22dp"/>
-
-            <dji.ux.widget.RemoteControlSignalWidget
-                android:layout_width="38dp"
-                android:layout_height="22dp"/>
-
-            <dji.ux.widget.VideoSignalWidget
-                android:layout_width="38dp"
-                android:layout_height="22dp"/>
-
-            <dji.ux.widget.WiFiSignalWidget
-                android:layout_width="22dp"
-                android:layout_height="20dp"/>
-
-            <dji.ux.widget.BatteryWidget
-                android:layout_width="96dp"
-                android:layout_height="22dp"
-                custom:excludeView="singleVoltage"/>
-
-            <dji.ux.widget.ConnectionWidget
-                android:layout_marginTop="3dp"
-                android:layout_width="18dp"
-                android:layout_height="18dp"/>
-        </LinearLayout>
-
-
-        <LinearLayout
-            android:id="@+id/camera"
+        <TextView
+            android:id="@+id/connection_status_text_view"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@id/signal"
-            android:layout_centerHorizontal="true"
-            android:layout_marginTop="20dp"
-            android:background="@color/dark_gray"
-            android:orientation="horizontal">
+            android:text="Status: No Product Connected"
+            android:textColor="@android:color/black"
+            android:textSize="20sp"
+            android:textStyle="bold" />
 
-            <dji.ux.widget.AutoExposureLockWidget
-                android:layout_width="30dp"
-                android:layout_height="30dp"/>
-
-            <dji.ux.widget.FocusExposureSwitchWidget
-                android:layout_width="30dp"
-                android:layout_height="30dp"/>
-
-            <dji.ux.widget.FocusModeWidget
-                android:layout_width="30dp"
-                android:layout_height="30dp"/>
-
-            <dji.ux.widget.config.CameraConfigISOAndEIWidget
-                android:layout_width="60dp"
-                android:layout_height="30dp"/>
-
-            <dji.ux.widget.config.CameraConfigShutterWidget
-                android:layout_width="60dp"
-                android:layout_height="30dp"/>
-
-            <dji.ux.widget.config.CameraConfigApertureWidget
-                android:layout_width="60dp"
-                android:layout_height="30dp"/>
-
-            <dji.ux.widget.config.CameraConfigEVWidget
-                android:layout_width="60dp"
-                android:layout_height="30dp"/>
-
-            <dji.ux.widget.config.CameraConfigWBWidget
-                android:layout_width="70dp"
-                android:layout_height="30dp"/>
-
-            <dji.ux.widget.config.CameraConfigStorageWidget
-                android:layout_width="130dp"
-                android:layout_height="30dp"/>
-        </LinearLayout>
-
-        <dji.ux.widget.ManualFocusWidget
-            android:layout_below="@id/camera"
-            android:layout_alignLeft="@id/camera"
-            android:layout_marginLeft="25dp"
-            android:layout_marginTop="5dp"
-            android:layout_width="42dp"
-            android:layout_height="218dp"
-            tools:ignore="RtlHardcoded"/>
-
-        <LinearLayout
-            android:layout_width="match_parent"
+        <TextView
+            android:id="@+id/product_info_text_view"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignParentBottom="true"
-            android:orientation="horizontal"
-            android:padding="12dp">
+            android:layout_marginTop="5dp"
+            android:text="Product Information" />
 
-            <dji.ux.widget.dashboard.DashboardWidget
-                android:id="@+id/Compass"
-                android:layout_width="405dp"
-                android:layout_height="91dp"
-                android:layout_marginRight="12dp"
-                tools:ignore="RtlHardcoded"/>
+        <TextView
+            android:id="@+id/model_info_text_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:text="Model Not Available" />
 
-        </LinearLayout>
+        <TextView
+            android:id="@+id/livestream_url_text_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:text="Livestream URL" />
 
-        <dji.ux.widget.controls.CameraControlsWidget
-            android:id="@+id/CameraCapturePanel"
-            android:layout_alignParentRight="true"
-            android:layout_below="@id/camera"
-            android:layout_width="50dp"
-            android:layout_height="213dp"
-            tools:ignore="RtlHardcoded"/>
+        <View
+            android:layout_width="wrap_content"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
 
-
-        <dji.ux.panel.CameraSettingExposurePanel
-            android:layout_width="180dp"
-            android:layout_below="@id/camera"
-            android:layout_toLeftOf="@+id/CameraCapturePanel"
-            android:background="@color/transparent"
-            android:gravity="center"
-            android:layout_height="263dp"
-            android:visibility="invisible"
-            tools:ignore="RtlHardcoded"/>
-
-        <dji.ux.panel.CameraSettingAdvancedPanel
-            android:layout_width="180dp"
-            android:layout_height="263dp"
-            android:layout_below="@id/camera"
-            android:layout_toLeftOf="@+id/CameraCapturePanel"
-            android:background="@color/transparent"
-            android:gravity="center"
-            android:visibility="invisible"
-            tools:ignore="RtlHardcoded"/>
-
-    </RelativeLayout>
+        <Button
+            android:id="@+id/open_button"
+            android:layout_width="wrap_content"
+            android:layout_height="60dp"
+            android:layout_gravity="end"
+            android:enabled="false"
+            android:onClick="@{() -> viewModel.openVideoFragment()}"
+            android:text="OPEN"
+            android:textSize="20sp" />
+    </LinearLayout>
 </layout>
 ```
 Widgets from the DJI UX SDK are added to provide functionality and user interface to the GUI and the camera from the drone. 
@@ -1595,7 +1476,7 @@ Copy all of the following code into that file:
     <fragment
         android:id="@+id/main_fragment"
         android:name="com.riis.cameraapp.main.MainFragment"
-        tools:layout="@layout/main_fragment">
+        tools:layout="@layout/fragment_main">
 
         <action
             android:id="@+id/action_main_to_video"
@@ -1605,7 +1486,7 @@ Copy all of the following code into that file:
     <fragment
         android:id="@+id/video_fragment"
         android:name="com.riis.cameraapp.video.VideoFragment"
-        tools:layout="@layout/video_fragment" />
+        tools:layout="@layout/fragment_video" />
 </navigation>
 ```
 
