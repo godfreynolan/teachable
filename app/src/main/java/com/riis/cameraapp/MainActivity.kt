@@ -4,14 +4,13 @@ import android.content.Intent
 import android.hardware.usb.UsbManager
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import com.riis.cameraapp.R
 import dji.sdk.sdkmanager.DJISDKManager
 
 class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.main_activity)
+        setContentView(R.layout.activity_main)
 
         supportActionBar?.hide()
     }

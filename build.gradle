@@ -1,27 +1,37 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 buildscript {
+    // Declare variable to store the kotlin version
     ext.kotlin_version = '1.6.10'
     repositories {
+        // Add Google's Maven repository as a dependency source
         google()
+        // Add Maven Central as a dependency source
         mavenCentral()
     }
     dependencies {
+        // Add Android gradle plugin as a dependency
         classpath 'com.android.tools.build:gradle:7.0.4'
+        // Add Kotlin gradle plugin as a dependency
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-        // NOTE: Do not place your application dependencies here; they belong
-        // in the individual module build.gradle files
+        // Note: Do not place your application dependencies here; they belong in the individual module build.gradle files
     }
 }
 
 allprojects {
     repositories {
+        // Add Google's Maven repository as a dependency source
         google()
+        // Add Jcenter as a dependency source
         jcenter()
+        // Add Maven Central as a dependency source
         mavenCentral()
+        // Add JitPack repository as a dependency source
         maven { url 'https://jitpack.io' }
     }
 }
 
+// create a gradle task that delete the build directory when executed
 task clean(type: Delete) {
+    // delete the root project build directory
     delete rootProject.buildDir
 }
