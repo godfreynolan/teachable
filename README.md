@@ -5,9 +5,9 @@
 This tutorial is designed for you to gain a basic understanding of the DJI Mobile SDK and a simple RTMP livestream. It will implement the FPV view and two basic camera functionalities: 
 - Take Photo
 - Record video.
-- Livestrean your screen
+- Livestream your screen
 
-You can download the tutorial's final sample project from this [Github Page](https://github.com/riis/teachable). <!-- Make sure to update when committed-->
+You can download the tutorial's final sample project from this [Github Page](https://github.com/riis/teachable/tree/livestream). <!-- Make sure to update when committed -->
 
 ## Application Activation and Aircraft Binding in China
 For DJI SDK mobile application used in China, it's required to activate the application and bind the aircraft to the user's DJI account.
@@ -48,29 +48,39 @@ Please replace **everything** in the `build.gradle (Project)` with:
 ```kotlin
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 buildscript {
+    // Declare variable to store the kotlin version
     ext.kotlin_version = '1.6.10'
     repositories {
+        // Add Google's Maven repository as a dependency source
         google()
+        // Add Maven Central as a dependency source
         mavenCentral()
     }
     dependencies {
+        // Add Android gradle plugin as a dependency
         classpath 'com.android.tools.build:gradle:7.0.4'
+        // Add Kotlin gradle plugin as a dependency
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-        // NOTE: Do not place your application dependencies here; they belong
-        // in the individual module build.gradle files
+        // Note: Do not place your application dependencies here; they belong in the individual module build.gradle files
     }
 }
 
 allprojects {
     repositories {
+        // Add Google's Maven repository as a dependency source
         google()
+        // Add Jcenter as a dependency source
         jcenter()
+        // Add Maven Central as a dependency source
         mavenCentral()
+        // Add JitPack repository as a dependency source
         maven { url 'https://jitpack.io' }
     }
 }
 
+// create a gradle task that delete the build directory when executed
 task clean(type: Delete) {
+    // delete the root project build directory
     delete rootProject.buildDir
 }
 ```
@@ -99,12 +109,13 @@ android {
     }
 
     defaultConfig {
-        manifestPlaceholders = [DJI_API_KEY: djiKey]
         applicationId 'com.riis.cameraapp'
         minSdkVersion 21
         targetSdkVersion 30
         versionCode 1
         multiDexEnabled true
+        manifestPlaceholders = [DJI_API_KEY: djiKey]
+        buildConfigField "String", "TWITCH_KEY", properties['TWITCH_KEY']
         versionName "1.0"
         ndk {
             // On x86 devices that run Android API 23 or above, if the application is targeted with API 23 or
@@ -258,7 +269,6 @@ import android.content.Context
 import com.secneo.sdk.Helper
 
 class MApplication: Application() {
-
     override fun attachBaseContext(base: Context?) {
         super.attachBaseContext(base)
         Helper.install(this)
@@ -283,22 +293,18 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.main_activity)
-        
-        // hide the support action bar
+        setContentView(R.layout.activity_main)
+
         supportActionBar?.hide()
     }
 
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
 
-        // check if the intent action is USB_ACCESSORY_ATTACHED
         val action = intent?.action
         if (UsbManager.ACTION_USB_ACCESSORY_ATTACHED == action) {
-            // create a new intent with the action USB_ACCESSORY_ATTACHED
             val attachedIntent = Intent()
             attachedIntent.action = DJISDKManager.USB_ACCESSORY_ATTACHED
-            // broadcast the intent
             sendBroadcast(attachedIntent)
         }
     }
@@ -311,7 +317,7 @@ The onCreate method is called when the activity is first created. In this method
 The onNewIntent method is called when a new intent is delivered to the activity. In this method, the code first checks if the intent's action is UsbManager.ACTION_USB_ACCESSORY_ATTACHED. If it is, it creates a new intent with the action DJISDKManager.USB_ACCESSORY_ATTACHED and sends it as a broadcast. This broadcast is used by the DJI SDK to handle the USB accessory being attached.
 
 ### 3. Implementing the MainActivity Layout
-Open the `main_activity.xml` layout file and replace the code with the following:
+Open the `activity_main.xml` layout file and replace the code with the following:
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -1339,127 +1345,6 @@ Open the `activity_connection.xml` layout file and replace the code with the fol
 ```
 In the xml file, we create four TextViews and one Button within a RelativeLayout. We use the `TextView(id:` `text_connection_status)` to show the product connection status and use the `TextView(id:text_product_info)` to show the connected product name. The `Button(id: btn_open)` is used to open the **MainActivity**.
 
-### 6. Implementing the ConnectionViewModel Class
-To store important variables and functions needed for mobile SDK registration and connection to the DJI product, an AndroidViewModel class is needed. This allows the app to maintain its connection state across rotation death.
-
-In the project navigator, go to **app -> java -> com -> riis -> fpv**, and right-click on the fpv directory. Select **New -> Kotlin Class/File** to create a new kotlin class and name it as `ConnectionViewModel.kt`.
-
-Next, replace the code of the `ConnectionViewModel.kt` file with the following:
-```kotlin
-import android.app.Application
-import android.util.Log
-import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.MutableLiveData
-import dji.common.error.DJIError
-import dji.common.error.DJISDKError
-import dji.sdk.base.BaseComponent
-import dji.sdk.base.BaseProduct
-import dji.sdk.sdkmanager.DJISDKInitEvent
-import dji.sdk.sdkmanager.DJISDKManager
-
-/*
-This ViewModel stores important variables and functions needed for mobile SDK registration
-and connection to the DJI product. This allows the app to maintain its connection state
-across rotation death.
- */
-class ConnectionViewModel(application: Application) : AndroidViewModel(application) {
-
-    //product is a BaseProduct object which stores an instance of the currently connected DJI product
-    val product: MutableLiveData<BaseProduct?> by lazy {
-        MutableLiveData<BaseProduct?>()
-    }
-
-    //connectionStatus boolean describes whether or not a DJI product is connected
-    val connectionStatus: MutableLiveData<Boolean> = MutableLiveData(false)
-
-    //DJI SDK app registration
-    fun registerApp() {
-        /*
-        Getting an instance of the DJISDKManager and using it to register the app
-        (requires API key in AndroidManifest). After installation, the app connects to the DJI server via
-        internet and verifies the API key. Subsequent app starts will use locally cached verification
-        information to register the app when the cached information is still valid.
-        */
-        DJISDKManager.getInstance().registerApp(getApplication(), object: DJISDKManager.SDKManagerCallback {
-            //Logging the success or failure of the registration
-            override fun onRegister(error: DJIError?) {
-                if (error == DJISDKError.REGISTRATION_SUCCESS) {
-                    Log.i(ConnectionActivity.TAG, "onRegister: Registration Successful")
-                } else {
-                    Log.i(ConnectionActivity.TAG, "onRegister: Registration Failed - ${error?.description}")
-                }
-            }
-            //called when the remote controller disconnects from the user's mobile device
-            override fun onProductDisconnect() {
-                Log.i(ConnectionActivity.TAG, "onProductDisconnect: Product Disconnected")
-                connectionStatus.postValue(false) //setting connectionStatus to false
-            }
-            //called when the remote controller connects to the user's mobile device
-            override fun onProductConnect(baseProduct: BaseProduct?) {
-                Log.i(ConnectionActivity.TAG, "onProductConnect: Product Connected")
-                product.postValue(baseProduct)
-                connectionStatus.postValue(true) //setting connectionStatus to true
-            }
-            //called when the DJI aircraft changes
-            override fun onProductChanged(baseProduct: BaseProduct?) {
-                Log.i(ConnectionActivity.TAG, "onProductChanged: Product Changed - $baseProduct")
-                product.postValue(baseProduct)
-
-            }
-            //Called when a component object changes. This method is not called if the component is already disconnected
-            override fun onComponentChange(componentKey: BaseProduct.ComponentKey?, oldComponent: BaseComponent?, newComponent: BaseComponent?) {
-                //Alert the user which component has changed, and mention what new component replaced the old component (can be null)
-                Log.i(ConnectionActivity.TAG, "onComponentChange key: $componentKey, oldComponent: $oldComponent, newComponent: $newComponent")
-
-                //Listens to connectivity changes in each new component
-                newComponent?.let { component ->
-                    component.setComponentListener { connected ->
-                        Log.i(ConnectionActivity.TAG, "onComponentConnectivityChange: $connected")
-                    }
-                }
-            }
-            //called when loading SDK resources
-            override fun onInitProcess(p0: DJISDKInitEvent?, p1: Int) {}
-
-            //Called when Fly Safe database download progress is updated
-            override fun onDatabaseDownloadProgress(p0: Long, p1: Long) {}
-        })
-    }
-}
-```
-Here, we implement several features:
-
-* variable product is used to store an instance of the currently connected DJI product
-* variable connectionStatus describes whether or not a DJI product is connected
-* The app is registered with the DJI SDK and an instance of `SDKManagerCallback` is initialized to provide feedback from the SDK.
-* Four interface methods of `SDKManagerCallback` are used. The `onRegister()` method is used to check the Application registration status and show text message here. When the product is connected or disconnected, the `onProductConnect()` and `onProductDisconnect()` methods will be invoked. Moreover, we use the `onComponentChange()` method to check the component changes.
-~~~~
-Note: Permissions must be requested by the application and granted by the user in order to register the DJI SDK correctly. This is taken care of in ConnectionActivity before it calls on the ViewModel's registerApp() method. Furthermore, the camera and USB hardwares must be declared in the AndroidManifest for DJI SDK to work.
-~~~~
-### 7. Configuring Layout 
-Once the above steps are finished, we are ready to add the layouts that will make the application look nice and contain all the widgets for the camera to function properly.
-First, open **res->layout->main_activity.xml**, if the file is not present then create it and replace the code in the file with the following. 
-```xml
-<?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/container"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context=".MainActivity">
-
-    <androidx.fragment.app.FragmentContainerView
-        android:id="@+id/main_nav_fragment"
-        android:name="androidx.navigation.fragment.NavHostFragment"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        app:defaultNavHost="true"
-        app:navGraph="@navigation/main_nav_graph" />
-</FrameLayout>
-```
-Here we simply create a main container that will hold all of the content going forward. This will be accessed from mainactivity to perform each other activity.
-
 Next, we create **res->layout->main_fragment and add the following xml code, replacing the old xml with it. 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -1769,122 +1654,12 @@ Lastly, create `styles.xml` and replace the content with the following:
 </resources>
 ```
 
-## Registering the Application
-After you finish the above steps, let's register our application with the App Key you obtain from the DJI Developer Website. If you are not familiar with the App Key, please check the [Get Started](https://developer.dji.com/mobile-sdk/documentation/quick-start/index.html).
-
-1. Let's open the `AndroidManifest.xml` file and specify the permissions that your application needs by adding `<uses-permission>` elements into the `<manifest>` element of the `AndroidManifest.xml` file. We also need to declare the camera and USB hardwares using `<uses-feature>` child elements since they will be used by the application.
-2. Next, add `android:name=".MApplication"` inside of the `<application>` element in the `AndroidManifest.xml` file
-3. Moreover, let's add the following elements as childs of the `<application>` element, right on top of the "ConnectionActivity" `<activity>` element as shown below
-4. In the code above, you should substitute your App Key of the application for "Please enter your App Key here." in the value attribute under the `android:name="com.dji.sdk.API_KEY` attribute.
-5. Lastly, update the "MainActivity" and "ConnectionActivity" `<activity>` elements as shown below:
-   
-```xml
-<?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    package="com.riis.cameraapp">
-
-    <uses-permission android:name="android.permission.BLUETOOTH" />
-    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
-    <uses-permission android:name="android.permission.VIBRATE" />
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
-    <uses-permission android:name="android.permission.MOUNT_UNMOUNT_FILESYSTEMS"
-        tools:ignore="ProtectedPermissions" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
-        tools:ignore="ScopedStorage" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
-
-    <uses-feature android:name="android.hardware.camera" />
-    <uses-feature android:name="android.hardware.camera.autofocus" />
-    <uses-feature
-        android:name="android.hardware.usb.host"
-        android:required="false" />
-    <uses-feature
-        android:name="android.hardware.usb.accessory"
-        android:required="true" />
-
-    <application
-        android:name="com.riis.cameraapp.MApplication"
-        android:allowBackup="true"
-        android:icon="@mipmap/ic_launcher"
-        android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
-        android:supportsRtl="true"
-        android:theme="@style/Theme.CameraApp">
-
-        <!-- DJI SDK -->
-        <uses-library android:name="com.android.future.usb.accessory" />
-        <uses-library
-            android:name="org.apache.http.legacy"
-            android:required="false" />
-        <meta-data
-            android:name="com.dji.sdk.API_KEY"
-            android:value="${DJI_API_KEY}" />
-        <!-- DJI SDK -->
-
-        <activity
-            android:name=".ConnectionActivity"
-            android:screenOrientation="portrait"
-            android:launchMode="singleTop"
-            android:configChanges="orientation"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-
-            <intent-filter>
-                <action android:name="android.hardware.usb.action.USB_ACCESSORY_ATTACHED" />
-            </intent-filter>
-            <meta-data
-                android:name="android.hardware.usb.action.USB_ACCESSORY_ATTACHED"
-                android:resource="@xml/accessory_filter"/>
-        </activity>
-
-        <activity android:name=".MainActivity"
-            android:screenOrientation="userLandscape"
-            android:exported="true"/>
-    </application>
-
-</manifest>
-```
-In the code above, we add the attributes of `android:screenOrientation` to set "ConnectionActivity" as **portrait** and set "MainActivity" as **landscape**.
-
-We must now add the accessory filter file to the project. With this file, the app can determine what devices are being plugged into the Android phone. Create a new Directory under **app/res/** called `xml`, if one has not already been made. Then, right click the newly created folder and create a new **XML Resource File** called `accessory_filter.xml`. Then press **OK**. Inside this resource file, replace all pre-existing code with the following code. The user will now be prompted to open the app when DJI controllers are plugged in.
-```xml
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <usb-accessory model="T600" manufacturer="DJI"/>
-    <usb-accessory model="AG410" manufacturer="DJI"/>
-    <usb-accessory model="com.dji.logiclink" manufacturer="DJI"/>
-    <usb-accessory model="WM160" manufacturer="DJI"/>
-</resources>
-```
-
-One final task must be completed before the DJI drone is able to be connected to the mobile device. In your `local.properties` gradle file, add the following line, however replace `"INSERT API KEY HERE"` with the API key you obtained from the previous steps. 
-```gradle
-DJI_API_KEY="INSERT API KEY HERE"
-```
-
 ~~~~
-Congratulations! Your Aerial FPV android app is complete, you can now use this app to control the camera of your DJI Product now.
+Congratulations! Your Live Streaming FPV Camera android app is complete, you can now use this app to control the camera of your DJI Product now.
 ~~~~
 
 ## Summary
-In this tutorial, you’ve learned how to use DJI Mobile SDK to show the FPV View from the aircraft's camera and control the camera of DJI's Aircraft to shoot photo and record video. These are the most basic and common features in a typical drone mobile app: Capture and Record. However, if you want to create a drone app which is more fancy, you still have a long way to go. More advanced features should be implemented, including previewing the photo and video in the SD Card, showing the OSD data of the aircraft and so on. Hope you enjoy this tutorial, and stay tuned for our next one!
+In this tutorial, you’ve learned how to use DJI Mobile SDK to live stream the FPV View from the aircraft's camera and control the camera of DJI's Aircraft to shoot photo and record video. These are the most basic and common features in a typical drone mobile app: Capture and Record. However, if you want to create a drone app which is more fancy, you still have a long way to go. More advanced features should be implemented, including previewing the photo and video in the SD Card, showing the OSD data of the aircraft and so on. Hope you enjoy this tutorial, and stay tuned for our next one!
 
 ## License
 MIT
