@@ -1571,6 +1571,8 @@ Under `manifests` open up `AndroidManifest.xml` and copy in the following code:
 </manifest>
 ```
 
+Click File => Sync Project with Gradle Files
+
 ~~~~
 Congratulations! Your Live Streaming FPV Camera android app is complete, you can now use this app to control the camera of your DJI Product now.
 ~~~~
