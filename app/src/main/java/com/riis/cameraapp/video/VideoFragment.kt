@@ -13,14 +13,14 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import com.riis.cameraapp.BuildConfig
-import com.riis.cameraapp.databinding.VideoFragmentBinding
+import com.riis.cameraapp.databinding.FragmentVideoBinding
 import com.riis.cameraapp.models.eventbus.ServiceConnectionEvent
 import com.riis.cameraapp.service.StreamService
 import com.riis.cameraapp.service.StreamServiceConnection
 import dji.common.product.Model
 import dji.sdk.camera.VideoFeeder
 import dji.sdk.codec.DJICodecManager
-import kotlinx.android.synthetic.main.video_fragment.view.*
+import kotlinx.android.synthetic.main.fragment_video.view.*
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
@@ -45,7 +45,7 @@ class VideoFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        val binding = VideoFragmentBinding.inflate(inflater, container, false)
+        val binding = FragmentVideoBinding.inflate(inflater, container, false)
         binding.viewModel = viewModel
 
         return binding.root

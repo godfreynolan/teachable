@@ -8,7 +8,7 @@
     <fragment
         android:id="@+id/main_fragment"
         android:name="com.riis.cameraapp.main.MainFragment"
-        tools:layout="@layout/main_fragment">
+        tools:layout="@layout/fragment_main">
 
         <action
             android:id="@+id/action_main_to_video"
@@ -18,5 +18,5 @@
     <fragment
         android:id="@+id/video_fragment"
         android:name="com.riis.cameraapp.video.VideoFragment"
-        tools:layout="@layout/video_fragment" />
+        tools:layout="@layout/fragment_video" />
 </navigation>

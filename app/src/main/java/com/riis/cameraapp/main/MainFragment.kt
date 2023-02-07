@@ -11,12 +11,13 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Observer
 import androidx.navigation.findNavController
 import com.riis.cameraapp.R
-import com.riis.cameraapp.databinding.MainFragmentBinding
+import com.riis.cameraapp.databinding.FragmentMainBinding
 import dji.keysdk.KeyManager
 import dji.keysdk.ProductKey
-import kotlinx.android.synthetic.main.main_fragment.view.*
+import kotlinx.android.synthetic.main.fragment_main.view.*
 
 class MainFragment : Fragment() {
     private val missingPermissions = ArrayList<String>()
@@ -45,7 +46,7 @@ class MainFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        val binding = MainFragmentBinding.inflate(inflater, container, false)
+        val binding = FragmentMainBinding.inflate(inflater, container, false)
         binding.viewModel = viewModel
 
         return binding.root
@@ -104,18 +105,18 @@ class MainFragment : Fragment() {
     }
 
     private fun setUpLiveData() {
-        viewModel.notifyStatusChanged.observe(viewLifecycleOwner, androidx.lifecycle.Observer {
+        viewModel.notifyStatusChanged.observe(viewLifecycleOwner, Observer {
             refreshSDKRelativeUI()
         })
 
-        viewModel.progressToVideo.observe(viewLifecycleOwner, androidx.lifecycle.Observer {
+        viewModel.progressToVideo.observe(viewLifecycleOwner, Observer {
             if (it) {
                 requireView().findNavController().navigate(R.id.action_main_to_video)
                 viewModel.progressToVideo.value = false
             }
         })
 
-        viewModel.promptLogin.observe(viewLifecycleOwner, androidx.lifecycle.Observer {
+        viewModel.promptLogin.observe(viewLifecycleOwner, Observer {
             if (it) {
                 viewModel.loginDJIUserAccount(requireContext())
                 viewModel.promptLogin.value = false
