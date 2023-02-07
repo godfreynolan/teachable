@@ -9,13 +9,6 @@ This tutorial is designed for you to gain a basic understanding of the DJI Mobil
 
 You can download the tutorial's final sample project from this [Github Page](https://github.com/riis/teachable/tree/livestream). <!-- Make sure to update when committed -->
 
-## Application Activation and Aircraft Binding in China
-For DJI SDK mobile application used in China, it's required to activate the application and bind the aircraft to the user's DJI account.
-
-If an application is not activated, the aircraft not bound (if required), or a legacy version of the SDK (< 4.1) is being used, all camera live streams will be disabled, and flight will be limited to a zone of 100m diameter and 30m height to ensure the aircraft stays within line of sight.
-
-To learn how to implement this feature, please check this tutorial [Application Activation and Aircraft Binding](https://developer.dji.com/mobile-sdk/documentation/android-tutorials/ActivationAndBinding.html).
-
 ## Preparation
 Throughout this tutorial we will be using Android Studio Dolphin | 2021.3.1. You can download the latest version of Android Studio from [here](http://developer.android.com/sdk/index.html).
 
@@ -1265,86 +1258,7 @@ class VideoViewModel : ViewModel() {
 }
 ```
 
-### 5. Implementing the ConnectionActivity Layout
-Open the `activity_connection.xml` layout file and replace the code with the following:
-```xml
-<?xml version="1.0" encoding="utf-8"?>  
-<RelativeLayout  
-  xmlns:android="http://schemas.android.com/apk/res/android"  
-  xmlns:tools="http://schemas.android.com/tools"  
-  xmlns:app="http://schemas.android.com/apk/res-auto"  
-  android:layout_width="match_parent"  
-  android:layout_height="match_parent"  
-  tools:context=".ConnectionActivity">  
-  
- <TextView  android:id="@+id/text_connection_status"  
-  android:layout_width="wrap_content"  
-  android:layout_height="wrap_content"  
-  android:layout_alignBottom="@+id/text_product_info"  
-  android:layout_centerHorizontal="true"  
-  android:layout_marginBottom="89dp"  
-  android:gravity="center"  
-  android:text="Status: No Product Connected"  
-  android:textColor="@android:color/black"  
-  android:textSize="20dp"  
-  android:textStyle="bold" />  
-  
- <TextView  android:id="@+id/text_product_info"  
-  android:layout_width="wrap_content"  
-  android:layout_height="wrap_content"  
-  android:layout_centerHorizontal="true"  
-  android:layout_marginTop="270dp"  
-  android:text="@string/product_information"  
-  android:textColor="@android:color/black"  
-  android:textSize="20dp"  
-  android:gravity="center"  
-  android:textStyle="bold"  
-  />  
-  
- <TextView  android:id="@+id/text_model_available"  
-  android:layout_width="match_parent"  
-  android:layout_height="wrap_content"  
-  android:layout_centerHorizontal="true"  
-  android:gravity="center"  
-  android:layout_marginTop="300dp"  
-  android:text="@string/model_not_available"  
-  android:textSize="15dp"/>  
-  
- <Button  android:id="@+id/btn_open"  
-  android:layout_width="150dp"  
-  android:layout_height="55dp"  
-  android:layout_centerHorizontal="true"  
-  android:layout_marginTop="350dp"  
-  android:background="@drawable/round_btn"  
-  android:text="Open"  
-  android:textColor="@color/colorWhite"  
-  android:textSize="20dp"  
-  />  
-  
- <TextView  android:layout_width="wrap_content"  
-  android:layout_height="wrap_content"  
-  android:layout_centerHorizontal="true"  
-  android:layout_marginTop="430dp"  
-  android:text="@string/sdk_version"  
-  android:textSize="15dp"  
-  android:id="@+id/textView2" />  
-  
- <TextView  android:id="@+id/textView"  
-  android:layout_width="wrap_content"  
-  android:layout_height="wrap_content"  
-  android:layout_marginTop="58dp"  
-  android:text="@string/app_name"  
-  android:textAppearance="?android:attr/textAppearanceSmall"  
-  android:textColor="@color/black_overlay"  
-  android:textSize="20dp"  
-  android:textStyle="bold"  
-  android:layout_alignParentTop="true"  
-  android:layout_centerHorizontal="true" />  
-  
-</RelativeLayout>
-```
-In the xml file, we create four TextViews and one Button within a RelativeLayout. We use the `TextView(id:` `text_connection_status)` to show the product connection status and use the `TextView(id:text_product_info)` to show the connected product name. The `Button(id: btn_open)` is used to open the **MainActivity**.
-
+### 5. Implementing the Layouts
 Next, we create **res->layout->main_fragment and add the following xml code, replacing the old xml with it. 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -1603,7 +1517,7 @@ The **<RelativeLayout> fpv_container** is the most important here as it creates 
 
 If the functionality of any of these widgets needs to be known, they may be found on the DJI SDK documentation website. 
 
-### 8. Configuring the Resource XMLs
+### 6. Configuring the Resource XMLs
 Once you finish the above steps, let's change some of the files in **(app -> res -> values)** to some useful colours and strings. 
 First, open the `colors.xml` file and update the content as shown below:
 ```xml
@@ -1652,6 +1566,128 @@ Lastly, create `styles.xml` and replace the content with the following:
     <style name="AppTheme" parent="@style/Theme.AppCompat.DayNight.NoActionBar">
     </style>
 </resources>
+```
+
+### 7. Misc XMLs
+Let's create (or open) **res->xml->accessory_filter.xml** (right click on xml and create accessory_filter like you have been doing this tutorial)
+Replace or add in the following code:
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <usb-accessory model="T600" manufacturer="DJI"/>
+    <usb-accessory model="AG410" manufacturer="DJI"/>
+    <usb-accessory model="com.dji.logiclink" manufacturer="DJI"/>
+    <usb-accessory model="WM160" manufacturer="DJI"/>
+</resources>
+```
+
+In your project structure right click on **res** and click New Directory, name this directory "navigation", inside of navigation create a new XML file called `main_nav_graph.xml`.
+
+Copy all of the following code into that file:
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main_nav_graph"
+    app:startDestination="@id/main_fragment">
+
+    <fragment
+        android:id="@+id/main_fragment"
+        android:name="com.riis.cameraapp.main.MainFragment"
+        tools:layout="@layout/main_fragment">
+
+        <action
+            android:id="@+id/action_main_to_video"
+            app:destination="@id/video_fragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/video_fragment"
+        android:name="com.riis.cameraapp.video.VideoFragment"
+        tools:layout="@layout/video_fragment" />
+</navigation>
+```
+
+
+### 8. AndroidManifest.xml
+Under `manifests` open up `AndroidManifest.xml` and copy in the following code:
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.riis.cameraapp">
+
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.MOUNT_UNMOUNT_FILESYSTEMS" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <uses-feature android:name="android.hardware.camera" />
+    <uses-feature android:name="android.hardware.camera.autofocus" />
+    <uses-feature
+        android:name="android.hardware.usb.host"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.usb.accessory"
+        android:required="true" />
+
+    <application
+        android:name=".MApplication"
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+
+        <meta-data
+            android:name="com.dji.sdk.API_KEY"
+            android:value="${DJI_API_KEY}" />
+
+        <service android:name="dji.sdk.sdkmanager.DJIGlobalService" />
+
+        <uses-library
+            android:name="org.apache.http.legacy"
+            android:required="false" />
+        <uses-library android:name="com.android.future.usb.accessory" />
+
+        <activity
+            android:name=".MainActivity"
+            android:launchMode="singleTop"
+            android:screenOrientation="reverseLandscape"
+            tools:ignore="LockedOrientationActivity">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <action android:name="android.hardware.usb.action.USB_ACCESSORY_ATTACHED" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.hardware.usb.action.USB_ACCESSORY_ATTACHED"
+                android:resource="@xml/accessory_filter" />
+        </activity>
+
+        <service
+            android:name=".service.StreamService"
+            android:foregroundServiceType="mediaProjection" />
+    </application>
+</manifest>
 ```
 
 ~~~~
