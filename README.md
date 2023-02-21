@@ -1,4 +1,4 @@
-# Creating a Camera App w/ Live Streaming Tutorial
+# Creating an Augmented Reality HTML Overlay for the Camera App
 ## Pre-requisite Knowledge
 ***`WARNING: THIS TUTORIAL ASSUMES YOU'VE COMPLETED THE PREVIOUS TUTORIALS`***
 
