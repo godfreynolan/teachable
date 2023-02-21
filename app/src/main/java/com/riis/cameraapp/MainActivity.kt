@@ -1,9 +1,13 @@
 package com.riis.cameraapp
 
+import android.graphics.Color
 import android.graphics.SurfaceTexture
 import android.os.Bundle
+import android.os.Looper
+import android.util.Log
 import android.view.TextureView
 import android.view.View
+import android.webkit.WebView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import dji.common.product.Model
@@ -11,9 +15,12 @@ import dji.sdk.base.BaseProduct
 import dji.sdk.camera.Camera
 import dji.sdk.camera.VideoFeeder
 import dji.sdk.codec.DJICodecManager
+import dji.sdk.flightcontroller.FlightController
 import dji.sdk.products.Aircraft
 import dji.sdk.products.HandHeld
 import dji.sdk.sdkmanager.DJISDKManager
+import android.os.Handler
+
 
 /*
 This activity provides an interface to access a connected DJI Product's camera and use
@@ -24,12 +31,21 @@ class MainActivity : AppCompatActivity(), TextureView.SurfaceTextureListener, Vi
     private var receivedVideoDataListener: VideoFeeder.VideoDataListener? = null
     private var codecManager: DJICodecManager? = null //handles the encoding and decoding of video data
 
+    private var myAircraft: Aircraft = getProductInstance() as Aircraft
+    private var myFlightController: FlightController = myAircraft.flightController
+    private var pitch: Float = 0.0f;
+    private var altitude: Float = 0.0f;
+
     //Creating the Activity
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         setContentView(R.layout.activity_main) //inflating the activity_main.xml layout as the activity's view
-
+        val webView: WebView = findViewById(R.id.ARview)
+        webView.getSettings().setJavaScriptEnabled(true)
+        webView.loadUrl("file:///android_asset/overlay.html")
+        webView.setBackgroundColor(Color.TRANSPARENT);
+        //We need to make a function that repeatedly loops and calls the javascript
+        //While also obtaining the above data to send
         /*
         The receivedVideoDataListener receives the raw video data and the size of the data from the DJI product.
         It then sends this data to the codec manager for decoding.
@@ -37,6 +53,26 @@ class MainActivity : AppCompatActivity(), TextureView.SurfaceTextureListener, Vi
         receivedVideoDataListener = VideoFeeder.VideoDataListener { videoBuffer, size ->
             codecManager?.sendDataToDecoder(videoBuffer, size)
         }
+
+        myFlightController.setStateCallback { controller ->
+            altitude = controller.aircraftLocation.altitude
+        }
+        myAircraft.gimbal.setStateCallback { gimbalState ->
+            if (gimbalState != null) {
+                pitch = gimbalState.attitudeInDegrees.pitch
+            }
+        }
+
+        var myHandler = Handler(Looper.getMainLooper())
+        myHandler.post(object : Runnable {
+            override fun run() {
+                var lat = myFlightController.state.aircraftLocation.latitude;
+                var lon = myFlightController.state.aircraftLocation.longitude;
+                var heading = myFlightController.compass.heading;
+                webView.loadUrl("javascript:change($altitude, $lat, $lon, $heading, $pitch)")
+                myHandler.postDelayed(this, 50)
+            }
+        })
     }
 
     //Function that initializes the display for the videoSurface TextureView

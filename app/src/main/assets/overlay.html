@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Display buildings in 3D</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no"/>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.10.0/mapbox-gl.css" rel="stylesheet"/>
+    <link href="local.css" rel="stylesheet" />
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.10.0/mapbox-gl.js"></script>
+</head>
+<body>
+<div id="map"></div>
+<script>
+mapboxgl.accessToken =
+  "pk.eyJ1IjoidG1heSIsImEiOiJjbDExMzEwM3AwM2FpM2lwNTVjd2k3bHFxIn0.6wBbnKZx-nYTno4oyXl-og";
+const map = new mapboxgl.Map({
+  style: 'mapbox://styles/riis/cl9yoplca002d15r76m7bwaeh',
+  center: [-82.3623292777778, 27.44881725],
+  zoom: 19.6612483141484,
+  maxPitch: 80,
+  unit: 'metric',
+  // pitch: 9.3,
+  bearingSnap:0,
+  bearing: -96.4,
+  container: "map",
+  antialias: true,
+});
+function updateCameraPosition(position, altitude, target) {
+  const camera = map.getFreeCameraOptions();
+  camera.position = mapboxgl.MercatorCoordinate.fromLngLat(position,altitude);
+  camera.lookAtPoint(target);
+  map.setFreeCameraOptions(camera);
+}
+map.once("load", () => {
+  updateCameraPosition([-82.3623292777778, 27.44881725], 30, [-82.3623292777778, 27.44881725]);
+  const marker = new mapboxgl.Marker()
+    .setLngLat([-82.3623292777778, 27.44881725])
+    .addTo(map);
+  map.setBearing(-96.4);
+});
+function change(droneHeight, droneLat, droneLong, droneHeading, gimbalPitch){
+  /*console.log("--------------------------------");
+  console.log("Height: " + json[x].height_above_takeoff*0.3048);
+  console.log("Pitch: " + json[x].gimbal_pitch);
+  console.log("Heading: " + json[x].compass_heading);
+  console.log("Longitude: " + json[x].longitude);
+  console.log("Latitude: " + json[x].latitude);
+  */
+  let d = distance(droneHeight, gimbalPitch + 90);
+  let target = destinationPoint(Number(droneLat), Number(droneLong), d, droneHeading, radius=6371e3);
+  updateCameraPosition([droneLong, droneLat], droneHeight, [String(target[0]),String(target[1])]);
+  map.setBearing(droneHeading);
+}
+function distance(RelativeAltitude, pitch){
+  return Math.tan(pitch * Math.PI / 180) * RelativeAltitude;
+}
+function destinationPoint(lat, lon, distance, bearing, radius=6371e3) {
+  const δ = distance / radius; // angular distance in radians
+  const θ = Number(bearing).toRadians();
+  const φ1 = lat.toRadians(), λ1 = lon.toRadians();
+  const sinφ2 = Math.sin(φ1) * Math.cos(δ) + Math.cos(φ1) * Math.sin(δ) * Math.cos(θ);
+  const φ2 = Math.asin(sinφ2);
+  const y = Math.sin(θ) * Math.sin(δ) * Math.cos(φ1);
+  const x = Math.cos(δ) - Math.sin(φ1) * sinφ2;
+  const λ2 = λ1 + Math.atan2(y, x);
+  const lt = φ2.toDegrees();
+  const ln = λ2.toDegrees();
+  return [ln,lt]
+}
+// Extend Number object with methods to convert between degrees & radians
+Number.prototype.toRadians = function() { return this * Math.PI / 180; };
+Number.prototype.toDegrees = function() { return this * 180 / Math.PI; };
+</script>
+</body>
+</html>
