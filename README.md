@@ -242,7 +242,7 @@ include ':app'
 #### local.properties
 Please add your API keys here to keep them private by adding the following lines in `local.properties`
 Please replace `<insert api key here>` with your actual API key.
-```
+```kotlin
 DJI_API_KEY=<insert dji api key here>
 ```
 
@@ -251,6 +251,7 @@ DJI_API_KEY=<insert dji api key here>
 In the project file navigator, go to app -> java -> com -> riis -> aroverlayapp, and right-click on the aroverlayapp directory. Select New -> Kotlin Class to create a new kotlin class and name it as MApplication.kt.
 
 Then, open the MApplication.kt file and replace the content with the following:
+```kotlin
 package com.riis.aroverlayapp
 
 import android.app.Application
@@ -268,6 +269,7 @@ Here we override the attachBaseContext() method to invoke the install() method o
 
 ### 2. Implementing the MainActivity Class
 The MainActivity.kt file is created by Android Studio by default. Let's replace its code with the following:
+```kotlin
 package com.riis.cameraapp
 
 import android.graphics.Color
@@ -290,7 +292,6 @@ import dji.sdk.products.Aircraft
 import dji.sdk.products.HandHeld
 import dji.sdk.sdkmanager.DJISDKManager
 import android.os.Handler
-
 
 /*
 This activity provides an interface to access a connected DJI Product's camera and use
@@ -431,7 +432,7 @@ class MainActivity : AppCompatActivity(), TextureView.SurfaceTextureListener, Vi
         }
     }
 }
-
+```
 The purpose of this code is to provide an interface for an Android application that allows the user to access and control a connected DJI product's camera. The code uses the DJI SDK to interact with the camera and receives video data from the DJI product and sends it to the codec manager for decoding. The `MainActivity` class implements the `TextureView.SurfaceTextureListener` and `View.OnClickListener` interfaces and overrides their methods to handle the display and handling of the video feed.
 
 Here are explanations of some of the key functions in the code:
@@ -552,7 +553,123 @@ In the xml file, we created each widget to access the DJI UXSDK widget elements 
 
 Furthermore, we add a webview to contain the future HTML overlay which will be implemented in the next step. 
 
-[ADD HTML STEP HERE]
+### 4. Creating HTML Files
+To create the overlay, we need to create an HTML file to access MapBox, an API used in javascript to display house and street numbers. First create a folder named "assets" and put it inside of the same directory the "res" folder is in. Inside of the "assets" directory, create 2 files. 
+1. local.css
+2. overlay.html
+
+Edit overlay.html and add the following 
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Display buildings in 3D</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no"/>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.10.0/mapbox-gl.css" rel="stylesheet"/>
+    <link href="local.css" rel="stylesheet" />
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.10.0/mapbox-gl.js"></script>
+</head>
+<body>
+<div id="map"></div>
+<script>
+mapboxgl.accessToken =
+  "pk.eyJ1IjoidG1heSIsImEiOiJjbDExMzEwM3AwM2FpM2lwNTVjd2k3bHFxIn0.6wBbnKZx-nYTno4oyXl-og";
+const map = new mapboxgl.Map({
+  style: 'mapbox://styles/riis/cl9yoplca002d15r76m7bwaeh',
+  center: [-82.3623292777778, 27.44881725],
+  zoom: 19.6612483141484,
+  maxPitch: 80,
+  unit: 'metric',
+  // pitch: 9.3,
+  bearingSnap:0,
+  bearing: -96.4,
+  container: "map",
+  antialias: true,
+});
+function updateCameraPosition(position, altitude, target) {
+  const camera = map.getFreeCameraOptions();
+  camera.position = mapboxgl.MercatorCoordinate.fromLngLat(position,altitude);
+  camera.lookAtPoint(target);
+  map.setFreeCameraOptions(camera);
+}
+map.once("load", () => {
+  updateCameraPosition([-82.3623292777778, 27.44881725], 30, [-82.3623292777778, 27.44881725]);
+  const marker = new mapboxgl.Marker()
+    .setLngLat([-82.3623292777778, 27.44881725])
+    .addTo(map);
+  map.setBearing(-96.4);
+});
+function change(droneHeight, droneLat, droneLong, droneHeading, gimbalPitch){
+  let d = distance(droneHeight, gimbalPitch + 90);
+  let target = destinationPoint(Number(droneLat), Number(droneLong), d, droneHeading, radius=6371e3);
+  updateCameraPosition([droneLong, droneLat], droneHeight, [String(target[0]),String(target[1])]);
+  map.setBearing(droneHeading);
+}
+function distance(RelativeAltitude, pitch){
+  return Math.tan(pitch * Math.PI / 180) * RelativeAltitude;
+}
+function destinationPoint(lat, lon, distance, bearing, radius=6371e3) {
+  const δ = distance / radius; // angular distance in radians
+  const θ = Number(bearing).toRadians();
+  const φ1 = lat.toRadians(), λ1 = lon.toRadians();
+  const sinφ2 = Math.sin(φ1) * Math.cos(δ) + Math.cos(φ1) * Math.sin(δ) * Math.cos(θ);
+  const φ2 = Math.asin(sinφ2);
+  const y = Math.sin(θ) * Math.sin(δ) * Math.cos(φ1);
+  const x = Math.cos(δ) - Math.sin(φ1) * sinφ2;
+  const λ2 = λ1 + Math.atan2(y, x);
+  const lt = φ2.toDegrees();
+  const ln = λ2.toDegrees();
+  return [ln,lt]
+}
+// Extend Number object with methods to convert between degrees & radians
+Number.prototype.toRadians = function() { return this * Math.PI / 180; };
+Number.prototype.toDegrees = function() { return this * 180 / Math.PI; };
+</script>
+</body>
+</html>
+```
+
+Here in the HTML we add the mapbox api and initialize it to provide the map. Change() is one of the most important functions here as it updates the map whenever the function is called with the values provided. Change is called from our main activity to update the map with the location and data of the drone. 
+
+Many of the functions here use the pythagorean theorem to determine where the point is in space the drone is looking at by calculating the distance. 
+
+Edit local.css and add the following 
+```css
+body {
+  margin: 0;
+  padding: 0;
+}
+#map {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index:100;
+
+  /* use opacity while comparing satellite view with drone image */
+  opacity: 0.7;
+}
+#container {
+    width: 100vw;
+    height: 100vh;
+  position: relative;
+}
+#vid {
+  /* position: absolute;
+  top: 0;
+  left: 0; */
+  display: block;
+  margin: auto;
+  z-index: -100;
+  height:100vh;
+  text-align: center;
+  /* width: 100vw; */
+}
+```
+
+A simple CSS file which turns the map transparent so the camera underneath may be seen. Since the CSS is simple, it will not be explained inside of this tutorial. 
 
 ### 4. Implementing the ConnectionActivity Class
 To improve the user experience, we had better create an activity to show the connection status between the DJI Product and the SDK, once it's connected, the user can press the OPEN button to enter the MainActivity.
