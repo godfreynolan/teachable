@@ -2,12 +2,9 @@
 ## Pre-requisite Knowledge
 ***`WARNING: THIS TUTORIAL ASSUMES YOU'VE COMPLETED THE PREVIOUS TUTORIALS`***
 
-This tutorial is designed for you to gain a basic understanding of the DJI Mobile SDK and a simple RTMP livestream. It will implement the FPV view and two basic camera functionalities: 
-- Take Photo
-- Record video.
-- Livestream your screen
+This tutorial is designed for you to gain a basic understanding of the DJI Mobile SDK and a simple RTMP livestream. It will implement the FPV view and a basic overlay which displays street names and houses: 
 
-You can download the tutorial's final sample project from this [Github Page](https://github.com/riis/teachable/tree/livestream). <!-- Make sure to update when committed -->
+You can download the tutorial's final sample project from this [Github Page](https://github.com/riis/teachable/tree/arCamera). <!-- Make sure to update when committed -->
 
 ## Preparation
 Throughout this tutorial we will be using Android Studio Dolphin | 2021.3.1. You can download the latest version of Android Studio from [here](http://developer.android.com/sdk/index.html).
