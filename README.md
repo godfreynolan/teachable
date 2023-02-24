@@ -270,7 +270,7 @@ Here we override the attachBaseContext() method to invoke the install() method o
 ### 2. Implementing the MainActivity Class
 The MainActivity.kt file is created by Android Studio by default. Let's replace its code with the following:
 ```kotlin
-package com.riis.cameraapp
+package com.riis.aroverlayapp
 
 import android.graphics.Color
 import android.graphics.SurfaceTexture
@@ -678,7 +678,7 @@ In the project navigator, go to app -> java -> com -> riis -> fpv, and right-cli
 
 Next, replace the code of the ConnectionActivity.kt file with the following:
 ```kotlin
-package com.riis.cameraapp
+package com.riis.aroverlayapp
 
 import android.Manifest
 import android.content.Intent
@@ -689,7 +689,7 @@ import android.widget.TextView
 import androidx.activity.viewModels
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.Observer
-import com.riis.cameraapp.R
+import com.riis.aroverlayapp.R
 import dji.sdk.sdkmanager.DJISDKManager
 
 /*
@@ -1054,7 +1054,7 @@ After you finish the above steps, let's register our application with the App Ke
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    package="com.riis.cameraapp">
+    package="com.riis.aroverlayapp">
 
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
@@ -1084,13 +1084,13 @@ After you finish the above steps, let's register our application with the App Ke
         android:required="true" />
 
     <application
-        android:name="com.riis.cameraapp.MApplication"
+        android:name="com.riis.aroverlayapp.MApplication"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.CameraApp">
+        android:theme="@style/Theme.aroverlayapp">
 
         <!-- DJI SDK -->
         <uses-library android:name="com.android.future.usb.accessory" />
