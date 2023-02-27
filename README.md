@@ -551,7 +551,7 @@ In the xml file, we created each widget to access the DJI UXSDK widget elements 
 Furthermore, we add a webview to contain the future HTML overlay which will be implemented in the next step. 
 
 ### 4. Creating HTML Files
-To create the overlay, we need to create an HTML file to access MapBox, an API used in javascript to display house and street numbers. First create a directory named "assets" and put it inside of <projectName>\app\src\main, then create the following two files. 
+To create the overlay, we need to create an HTML file to access MapBox, an API used in javascript to display house and street numbers. First create a directory named "assets" and put it inside of <projectName>\app\src\main, then create the following two files in the directory that was just created. 
 1. local.css
 2. overlay.html
 
