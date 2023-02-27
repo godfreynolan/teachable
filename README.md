@@ -1151,7 +1151,7 @@ After you finish the above steps, let's register our application with the App Ke
             android:required="false" />
         <meta-data
             android:name="com.dji.sdk.API_KEY"
-            android:value="234a6e3e3268cb7dadb6b3b5" />
+            android:value="${DJI_API_KEY}" />
         <!-- DJI SDK -->
 
         <activity
@@ -1198,12 +1198,12 @@ We must now add the accessory filter file to the project. With this file, the ap
 </resources>
 ```
 
-One final task must be completed before the DJI drone is able to be connected to the mobile device. In your `local.properties` gradle file, add the following line, however replace `"INSERT API KEY HERE"` with the API key you obtained from the previous steps. 
+One final task must be completed before the DJI drone is able to be built and properly run. Open the gradle.properties file and add the following line of code to the bottom. After this is added, the project should be able to be built with no more errors.
 ```gradle
-DJI_API_KEY="INSERT API KEY HERE"
+android.enableJetifier=true
 ```
 ~~~~
-Congratulations! Your Aerial FPV android app is complete, you can now use this app to control the camera of your DJI Product now.
+Congratulations! Your Aerial FPV android app is complete, you can now use this app to control the camera and view the streets with our AR Overlay.
 ~~~~
 
 ## Summary And Notes
