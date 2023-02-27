@@ -1,4 +1,4 @@
-package com.riis.cameraapp
+package com.riis.aroverlayapp
 
 import android.Manifest
 import android.content.Intent
@@ -9,7 +9,7 @@ import android.widget.TextView
 import androidx.activity.viewModels
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.Observer
-import com.riis.cameraapp.R
+import com.riis.aroverlayapp.R
 import dji.sdk.sdkmanager.DJISDKManager
 
 /*

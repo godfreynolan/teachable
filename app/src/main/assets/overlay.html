@@ -39,13 +39,6 @@ map.once("load", () => {
   map.setBearing(-96.4);
 });
 function change(droneHeight, droneLat, droneLong, droneHeading, gimbalPitch){
-  /*console.log("--------------------------------");
-  console.log("Height: " + json[x].height_above_takeoff*0.3048);
-  console.log("Pitch: " + json[x].gimbal_pitch);
-  console.log("Heading: " + json[x].compass_heading);
-  console.log("Longitude: " + json[x].longitude);
-  console.log("Latitude: " + json[x].latitude);
-  */
   let d = distance(droneHeight, gimbalPitch + 90);
   let target = destinationPoint(Number(droneLat), Number(droneLong), d, droneHeading, radius=6371e3);
   updateCameraPosition([droneLong, droneLat], droneHeight, [String(target[0]),String(target[1])]);

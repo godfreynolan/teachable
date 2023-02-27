@@ -8,13 +8,13 @@ properties.load(project.rootProject.file('local.properties').newDataInputStream(
 def djiKey = properties.getProperty('DJI_API_KEY')
 
 android {
-    namespace 'com.riis.cameraapp'
+    namespace 'com.riis.aroverlayapp'
     compileSdkVersion 31
     buildToolsVersion "30.0.3"
 
     defaultConfig {
         manifestPlaceholders = [DJI_API_KEY: djiKey]
-        applicationId 'com.riis.cameraapp'
+        applicationId 'com.riis.aroverlayapp'
         minSdkVersion 21
         targetSdkVersion 30
         versionCode 1

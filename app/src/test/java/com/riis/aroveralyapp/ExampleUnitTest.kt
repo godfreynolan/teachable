@@ -1,4 +1,4 @@
-package com.riis.cameraapp
+package com.riis.aroverlayapp
 
 import org.junit.Test
 

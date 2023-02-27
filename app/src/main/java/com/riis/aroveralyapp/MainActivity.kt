@@ -1,4 +1,4 @@
-package com.riis.cameraapp
+package com.riis.aroverlayapp
 
 import android.graphics.Color
 import android.graphics.SurfaceTexture
@@ -69,8 +69,9 @@ class MainActivity : AppCompatActivity(), TextureView.SurfaceTextureListener, Vi
                 var lat = myFlightController.state.aircraftLocation.latitude;
                 var lon = myFlightController.state.aircraftLocation.longitude;
                 var heading = myFlightController.compass.heading;
+                Log.d("myDEBUG", "Something here:$pitch");
                 webView.loadUrl("javascript:change($altitude, $lat, $lon, $heading, $pitch)")
-                myHandler.postDelayed(this, 50)
+                myHandler.postDelayed(this, 10)
             }
         })
     }

@@ -1,4 +1,4 @@
-package com.riis.cameraapp
+package com.riis.aroverlayapp
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -19,6 +19,6 @@ class ExampleInstrumentedTest {
     fun useAppContext() {
         // Context of the app under test.
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        assertEquals("com.riis.cameraapp", appContext.packageName)
+        assertEquals("com.riis.aroveralyapp", appContext.packageName)
     }
 }
