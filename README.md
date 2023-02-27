@@ -993,6 +993,7 @@ Currently the connection activity will produce an error because no buttons were 
    2. round_btn_disable.xml
    3. round_btn_normal.xml
    4. round_btn_pressed.xml
+
 Open **round_btn.xml** and replace what is in there with the following code. 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
