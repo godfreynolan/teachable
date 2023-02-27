@@ -894,6 +894,8 @@ In the project navigator, go to **app -> java -> com -> riis -> fpv**, and right
 
 Next, replace the code of the `ConnectionViewModel.kt` file with the following:
 ```kotlin
+package com.riis.aroverlayapp   
+   
 import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
@@ -984,6 +986,58 @@ Here, we implement several features:
 ~~~~
 Note: Permissions must be requested by the application and granted by the user in order to register the DJI SDK correctly. This is taken care of in ConnectionActivity before it calls on the ViewModel's registerApp() method. Furthermore, the camera and USB hardwares must be declared in the AndroidManifest for DJI SDK to work.
 ~~~~
+
+### 7. Adding buttons for connection activity
+Currently the connection activity will produce an error because no buttons were yet added for the implementation of the activity, let's change that. We need to access res/drawable and add a few of the following files.
+   1. round_btn.xml
+   2. round_btn_disable.xml
+   3. round_btn_normal.xml
+   4. round_btn_pressed.xml
+Open **round_btn.xml** and replace what is in there with the following code. 
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/round_btn_normal" android:state_focused="true"></item>
+    <item android:drawable="@drawable/round_btn_pressed" android:state_selected="true"></item>
+    <item android:drawable="@drawable/round_btn_pressed" android:state_pressed="true"></item>
+    <item android:drawable="@drawable/round_btn_disable" android:state_enabled="false"></item>
+    <item android:drawable="@drawable/round_btn_normal" ></item>
+</selector>
+```
+Open **round_btn_disable.xml** and replace what is in there with the following code. 
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="#AAAAAAAA" />
+    <corners android:topLeftRadius="10dp"
+        android:topRightRadius="10dp"
+        android:bottomRightRadius="10dp"
+        android:bottomLeftRadius="10dp"/>
+</shape>
+```
+Open **round_btn_normal.xml** and replace what is in there with the following code. 
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="#FF314268" />
+    <corners android:topLeftRadius="10dp"
+        android:topRightRadius="10dp"
+        android:bottomRightRadius="10dp"
+        android:bottomLeftRadius="10dp"/>
+</shape>
+```
+Open **round_btn_pressed.xml** and replace what is in there with the following code. 
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="#AA314268" />
+    <corners android:topLeftRadius="10dp"
+        android:topRightRadius="10dp"
+        android:bottomRightRadius="10dp"
+        android:bottomLeftRadius="10dp"/>
+</shape>
+```
+These buttons will be accessed by the connection screen to help the user connect to the drone on activity startup. 
 
 ### 8. Configuring the Resource XMLs
 Once you finish the above steps, let's copy all the images (xml files) from this Github project's drawable folder **(app -> res -> drawable)** to the same folder in your project. Their names can be found below. 
@@ -1087,7 +1141,7 @@ After you finish the above steps, let's register our application with the App Ke
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.aroverlayapp">
+        android:theme="@style/AppTheme">
 
         <!-- DJI SDK -->
         <uses-library android:name="com.android.future.usb.accessory" />
@@ -1096,7 +1150,7 @@ After you finish the above steps, let's register our application with the App Ke
             android:required="false" />
         <meta-data
             android:name="com.dji.sdk.API_KEY"
-            android:value="${DJI_API_KEY}" />
+            android:value="234a6e3e3268cb7dadb6b3b5" />
         <!-- DJI SDK -->
 
         <activity
