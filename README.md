@@ -545,7 +545,7 @@ tools:context=".MainActivity">
       android:layout_marginTop="12dp"/>
  </LinearLayout>
 </RelativeLayout>
-
+```
 In the xml file, we created each widget to access the DJI UXSDK widget elements for the app to use. More widgets can be found on the DJI UXSDK documentation page. Most importantly, we add the `<dji.ux.widget.FPVWidget/>`, which allows the application to see the FPV of the camera from the drone. Normally this would be done with a textureView however the UX widget allows us to skip that step.
 
 Furthermore, we add a webview to contain the future HTML overlay which will be implemented in the next step. 
