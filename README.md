@@ -1196,6 +1196,7 @@ We must now add the accessory filter file to the project. With this file, the ap
     <usb-accessory model="com.dji.logiclink" manufacturer="DJI"/>
     <usb-accessory model="WM160" manufacturer="DJI"/>
 </resources>
+
 ```
 
 One final task must be completed before the DJI drone is able to be built and properly run. Open the gradle.properties file and add the following line of code to the bottom. After this is added, the project should be able to be built with no more errors.
@@ -1208,6 +1209,10 @@ Congratulations! Your Aerial FPV android app is complete, you can now use this a
 
 ## Summary And Notes
 In this tutorial, you’ve learned how to use DJI Mobile SDK to show the FPV View from the aircraft's camera and provide an overlay which uses the drone's location, heading, and gimbal information to project street names and house numbers on to the screen. It should be noted that sometimes the street names and house numbers will be slightly off, this is due to the FOV of the mapbox element as well as discrepencies in height comparitively to sea level. Furthermore, the amount of gitter in the program is entirely dependent on the drone's GPS signal strength. In the future, a smoother transition could be provided to new points in the javascript code so that the map gitter is not an issue. 
+
+### App Showcase
+
+https://user-images.githubusercontent.com/70920324/223546744-a26cfe91-7c6e-46a2-a5d4-d759447783a4.mp4
 
 ## License
 MIT
