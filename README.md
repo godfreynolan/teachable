@@ -1212,7 +1212,7 @@ In this tutorial, you’ve learned how to use DJI Mobile SDK to show the FPV Vie
 
 ### App Showcase
 
-https://user-images.githubusercontent.com/70920324/223546744-a26cfe91-7c6e-46a2-a5d4-d759447783a4.mp4
+https://user-images.githubusercontent.com/70920324/224737187-49087ef2-3a9a-406a-8f4f-b8da0a9eb352.mp4
 
 ## License
 MIT
